@@ -81,7 +81,16 @@ export default function AdminDashboardPage() {
 }
 
 // Simple Stat Card Component
-function StatCard({ title, value, change, icon: Icon, trend }: any) {
+// Simple Stat Card Component
+interface StatCardProps {
+    title: string;
+    value: string;
+    change: string;
+    icon: React.ElementType; // Better than any
+    trend: 'up' | 'neutral' | 'down';
+}
+
+function StatCard({ title, value, change, icon: Icon, trend }: StatCardProps) {
     return (
         <Card className="shadow-sm border-slate-200 hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

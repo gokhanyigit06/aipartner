@@ -53,7 +53,7 @@ export default function PosPage() {
       .then(() => {
         console.log("POS Connected to KitchenHub");
 
-        connection.on("OrderReady", (order: any) => {
+        connection.on("OrderReady", (order: { tableName: string; tableId: string; orderNumber: string }) => {
           toast(`🔔 ${order.tableName || "Masa ?"} Siparişi Hazır!`, {
             description: `Sipariş No: ${order.orderNumber.substring(8)}`,
             action: {

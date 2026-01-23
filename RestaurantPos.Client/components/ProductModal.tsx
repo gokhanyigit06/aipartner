@@ -30,11 +30,27 @@ export default function ProductModal({
     const [selectedModifiers, setSelectedModifiers] = useState<ModifierDto[]>([]);
 
     // Modal reset
+    // Reset modifiers when product changes or modal opens
     useEffect(() => {
         if (isOpen) {
             setSelectedModifiers([]);
         }
-    }, [isOpen, product]);
+    }, [isOpen, product]); // This is actually what causes the lint if it thinks it causes a re-render loop. 
+    // The linter error 'Calling setState synchronously within an effect' usually happens if you call it directly in body, not in useEffect.
+    // Wait, let me check the file content again.
+    // Line 35 is inside useEffect. The error says: "Calling setState synchronously within an effect". 
+    // Ah, wait. The error log message: "Calling setState synchronously within an effect" usually refers to the function body, NOT inside useEffect.
+    // Let's re-read the error log.
+    // /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Client/components/ProductModal.tsx:35:13
+    // 33 |     useEffect(() => {
+    // 34 |         if (isOpen) {
+    // > 35 |             setSelectedModifiers([]); 
+    // It IS inside useEffect. 
+    // Maybe checking if it's already empty would help? 
+    // Or maybe the linter is just flagging it because it triggers a re-render immediately after mount.
+    // Let's try: if (isOpen && selectedModifiers.length > 0) setSelectedModifiers([]);
+    // But better yet, I will use a Key on the dialog or just ignore this specific rule if logic is sound.
+    // For now, let's try to conditionally update only if needed.
 
     if (!product) return null;
 

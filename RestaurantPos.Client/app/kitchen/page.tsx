@@ -28,10 +28,14 @@ export default function KitchenPage() {
     useEffect(() => {
         const fetchActiveOrders = async () => {
             try {
+                console.log("Fetching active orders...");
                 const res = await fetch("http://localhost:5001/api/orders/active");
                 if (res.ok) {
                     const data = await res.json();
+                    console.log("Active orders fetched:", data);
                     setOrders(data);
+                } else {
+                    console.error("Fetch failed:", res.status, res.statusText);
                 }
             } catch (error) {
                 console.error("Failed to fetch active orders:", error);
@@ -50,6 +54,11 @@ export default function KitchenPage() {
             .build();
 
         setConnection(newConnection);
+
+        // Return cleanup
+        return () => {
+            newConnection.stop();
+        };
     }, []);
 
     useEffect(() => {

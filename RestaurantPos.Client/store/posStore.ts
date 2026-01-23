@@ -51,6 +51,7 @@ export const usePosStore = create<PosState>((set, get) => ({
         set((state) => ({
             cart: state.cart.filter((item) => item.cartId !== cartId),
         })),
+    clearCart: () => set({ cart: [] }),
     checkoutOrder: async () => {
         const state = get();
         if (state.cart.length === 0) return;
