@@ -1,0 +1,59 @@
+using RestaurantPos.Api.Models;
+
+namespace RestaurantPos.Api.DTOs
+{
+    // --- READ DTOs (For GET) ---
+    public class ProductDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public decimal BasePrice { get; set; }
+        public bool IsActive { get; set; }
+        public Guid CategoryId { get; set; }
+        public List<ModifierGroupDto> ModifierGroups { get; set; } = new();
+    }
+
+    public class ModifierGroupDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public int SelectionType { get; set; }
+        public int MinSelection { get; set; }
+        public int MaxSelection { get; set; }
+        public List<ModifierDto> Modifiers { get; set; } = new();
+    }
+
+    public class ModifierDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public decimal PriceAdjustment { get; set; }
+    }
+
+    // --- CREATE DTOs (For POST) ---
+    public class ProductCreateDto
+    {
+        public string Name { get; set; }
+        public decimal BasePrice { get; set; }
+        public Guid CategoryId { get; set; }
+        public Guid TenantId { get; set; } 
+        
+        // Full Nested Structure for Creation
+        public List<ModifierGroupCreateDto> ModifierGroups { get; set; } = new();
+    }
+
+    public class ModifierGroupCreateDto
+    {
+        public string Name { get; set; }
+        public int SelectionType { get; set; } // 0 or 1
+        public int MinSelection { get; set; }
+        public int MaxSelection { get; set; }
+        public List<ModifierCreateDto> Modifiers { get; set; } = new();
+    }
+
+    public class ModifierCreateDto
+    {
+        public string Name { get; set; }
+        public decimal PriceAdjustment { get; set; }
+    }
+}

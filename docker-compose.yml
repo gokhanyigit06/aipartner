@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  backend:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: dotnet_backend
+    working_dir: /app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/app
+      # Host ve Container arasındaki binary uyumsuzluğunu önlemek için ve performans için bu klasörleri container içinde tutuyoruz
+      # Ancak dotnet watch mekanizmasının düzgün çalışması için bazen yapılandırmak gerekebilir, standart kullanım budur.
+      # - /app/bin
+      # - /app/obj
+    command: dotnet watch run --non-interactive
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

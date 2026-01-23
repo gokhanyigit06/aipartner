@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "8wWaPRS+Eml8paSn1nknWxQt97QEcXKSKws39k7lEMM=",
+  "Source": "RestaurantPos.Api",
+  "BasePath": "_content/RestaurantPos.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
