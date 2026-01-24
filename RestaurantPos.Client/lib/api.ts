@@ -212,3 +212,50 @@ export async function login(username: string, password: string): Promise<any> {
         throw error;
     }
 }
+
+// Generic API client for axios-like usage
+export const api = {
+    get: async (endpoint: string) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            cache: "no-store",
+            headers: getAuthHeaders(),
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        return { data: await response.json() };
+    },
+    post: async (endpoint: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        return { data: await response.json() };
+    },
+    put: async (endpoint: string, data?: any) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: data ? JSON.stringify(data) : undefined,
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        return { data: await response.json() };
+    },
+    delete: async (endpoint: string) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: "DELETE",
+            headers: getAuthHeaders(),
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        return { data: await response.json() };
+    }
+};
+

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RestaurantPos.Api.Data;
@@ -11,9 +12,11 @@ using RestaurantPos.Api.Data;
 namespace RestaurantPos.Api.Migrations
 {
     [DbContext(typeof(PosDbContext))]
-    partial class PosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260124200117_AddStaffManagementFields")]
+    partial class AddStaffManagementFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -195,24 +198,11 @@ namespace RestaurantPos.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Allergens")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
-
-                    b.Property<decimal?>("CostPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("DiscountedPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -223,13 +213,6 @@ namespace RestaurantPos.Api.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<int>("PreparationStation")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PrinterIds")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("StationRouting")
                         .HasColumnType("integer");
 
                     b.Property<Guid>("TenantId")
@@ -286,61 +269,6 @@ namespace RestaurantPos.Api.Migrations
                     b.ToTable("Shifts");
                 });
 
-            modelBuilder.Entity("RestaurantPos.Api.Models.StaffProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("BloodType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ContractStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("NetSalary")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("PhotoUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<decimal>("SgkPremium")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("StaffNo")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("WeeklyShiftPattern")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("StaffProfiles");
-                });
-
             modelBuilder.Entity("RestaurantPos.Api.Models.Table", b =>
                 {
                     b.Property<Guid>("Id")
@@ -364,34 +292,6 @@ namespace RestaurantPos.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tables");
-                });
-
-            modelBuilder.Entity("RestaurantPos.Api.Models.TimeEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ClockIn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ClockOut")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("StaffId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StaffId");
-
-                    b.ToTable("TimeEntries");
                 });
 
             modelBuilder.Entity("RestaurantPos.Api.Models.User", b =>
@@ -432,7 +332,7 @@ namespace RestaurantPos.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("43839567-d5cb-4464-90bb-bcec5313bb2a"),
+                            Id = new Guid("abaf0c96-944b-450c-abc5-7873fc0774cb"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -442,7 +342,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("1ad2d3ad-f2e0-4f9e-ac22-17b924b8127b"),
+                            Id = new Guid("98e78f47-d983-46b6-a66b-006afeb6474b"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -452,7 +352,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("f43ad75a-f460-4f4c-8700-4b15a6490990"),
+                            Id = new Guid("9374e6f9-1263-44eb-9e3d-4027fdc330c5"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -462,7 +362,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("97af0dca-9ff9-4148-9ec6-08c3d2769928"),
+                            Id = new Guid("02e07d03-ba90-4071-9fe3-aeef2ac8eed6"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -558,28 +458,6 @@ namespace RestaurantPos.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("RestaurantPos.Api.Models.StaffProfile", b =>
-                {
-                    b.HasOne("RestaurantPos.Api.Models.User", "User")
-                        .WithOne("StaffProfile")
-                        .HasForeignKey("RestaurantPos.Api.Models.StaffProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("RestaurantPos.Api.Models.TimeEntry", b =>
-                {
-                    b.HasOne("RestaurantPos.Api.Models.StaffProfile", "Staff")
-                        .WithMany("TimeEntries")
-                        .HasForeignKey("StaffId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Staff");
-                });
-
             modelBuilder.Entity("RestaurantPos.Api.Models.ModifierGroup", b =>
                 {
                     b.Navigation("Modifiers");
@@ -600,16 +478,6 @@ namespace RestaurantPos.Api.Migrations
             modelBuilder.Entity("RestaurantPos.Api.Models.Product", b =>
                 {
                     b.Navigation("ProductModifierGroups");
-                });
-
-            modelBuilder.Entity("RestaurantPos.Api.Models.StaffProfile", b =>
-                {
-                    b.Navigation("TimeEntries");
-                });
-
-            modelBuilder.Entity("RestaurantPos.Api.Models.User", b =>
-                {
-                    b.Navigation("StaffProfile");
                 });
 #pragma warning restore 612, 618
         }

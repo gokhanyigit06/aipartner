@@ -7,13 +7,14 @@ import {
     LayoutDashboard,
     UtensilsCrossed,
     ShoppingBag,
-    BarChart3,
+    FileText,
     Settings,
     LogOut,
     Armchair,
     Laptop,
     ChefHat,
-    Wine
+    Wine,
+    Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -23,7 +24,8 @@ const menuItems = [
     { icon: UtensilsCrossed, label: "Menü Yönetimi", href: "/admin/products" },
     { icon: Armchair, label: "Masa Yönetimi", href: "/admin/tables" },
     { icon: ShoppingBag, label: "Siparişler", href: "/admin/orders" },
-    { icon: BarChart3, label: "Raporlar", href: "/admin/reports" },
+    { icon: Users, label: "Personel & Prim", href: "/admin/staff" },
+    { icon: FileText, label: "Finansal Raporlar", href: "/admin/reports" },
     { icon: Settings, label: "Ayarlar", href: "/admin/settings" },
 ];
 

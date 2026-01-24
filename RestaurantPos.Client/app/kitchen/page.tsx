@@ -59,7 +59,9 @@ export default function KitchenPage() {
 
         // Return cleanup
         return () => {
-            newConnection.stop();
+            newConnection.stop().catch(() => {
+                // Ignore stop errors
+            });
         };
     }, []);
 
@@ -77,10 +79,15 @@ export default function KitchenPage() {
                         setOrders((prev) => [newOrder, ...prev]);
                     });
                 })
-                .catch((err) => console.error("SignalR Connection Failure:", err));
+                .catch((err) => {
+                    console.warn("SignalR bağlantısı kurulamadı (Backend çalışmıyor olabilir):", err.message);
+                    // Don't show error to user, just log it
+                });
 
             return () => {
-                connection.stop();
+                connection.stop().catch(() => {
+                    // Ignore stop errors
+                });
             };
         }
     }, [connection]);

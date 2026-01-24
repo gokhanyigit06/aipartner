@@ -76,10 +76,15 @@ export default function CashierPage() {
                     loadOrders();
                 });
             })
-            .catch(err => console.error("SignalR Connection Error: ", err));
+            .catch(err => {
+                console.warn("SignalR bağlantısı kurulamadı (Backend çalışmıyor olabilir):", err.message);
+                // Don't show error to user, just log it
+            });
 
         return () => {
-            connection.stop();
+            connection.stop().catch(() => {
+                // Ignore stop errors
+            });
         };
     }, []);
 

@@ -9,6 +9,27 @@ namespace RestaurantPos.Api.Models
         Kitchen = 0,
         Bar = 1
     }
+    
+    public enum StationRouting
+    {
+        KitchenOnly = 0,
+        BarOnly = 1,
+        Both = 2
+    }
+    
+    [Flags]
+    public enum AllergenType
+    {
+        None = 0,
+        Gluten = 1,
+        Dairy = 2,
+        Nuts = 4,
+        Eggs = 8,
+        Fish = 16,
+        Shellfish = 32,
+        Soy = 64,
+        Sesame = 128
+    }
 
     public enum SelectionType
     {
@@ -34,6 +55,26 @@ namespace RestaurantPos.Api.Models
         Cashier = 3
     }
     
+    public enum ContractStatus
+    {
+        Pending = 0,      // Bekliyor
+        Signed = 1,       // İmzalandı
+        Terminated = 2    // Sonlandırıldı
+    }
+    
+    public enum BloodType
+    {
+        Unknown = 0,
+        APositive = 1,    // A+
+        ANegative = 2,    // A-
+        BPositive = 3,    // B+
+        BNegative = 4,    // B-
+        ABPositive = 5,   // AB+
+        ABNegative = 6,   // AB-
+        OPositive = 7,    // O+
+        ONegative = 8     // O-
+    }
+    
     public class User : BaseEntity
     {
         [Required]
@@ -44,6 +85,89 @@ namespace RestaurantPos.Api.Models
         public string PasswordHash { get; set; }
         
         public UserRole Role { get; set; }
+        
+        // HR/Payroll Fields
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal MonthlySalary { get; set; } = 0;
+        
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal CommissionRate { get; set; } = 0; // e.g., 2.00 for 2%
+        
+        [MaxLength(100)]
+        public string? FullName { get; set; }
+        
+        // Navigation Property
+        public StaffProfile? StaffProfile { get; set; }
+    }
+    
+    // HR - Staff Profile (1-to-1 with User)
+    public class StaffProfile : BaseEntity
+    {
+        // Foreign Key to User
+        public Guid UserId { get; set; }
+        public User User { get; set; }
+        
+        // Identity
+        [MaxLength(20)]
+        public string? StaffNo { get; set; } // Personel No
+        
+        public BloodType BloodType { get; set; } = BloodType.Unknown;
+        
+        // Contact
+        [MaxLength(20)]
+        public string? Phone { get; set; }
+        
+        [MaxLength(500)]
+        public string? Address { get; set; }
+        
+        [MaxLength(500)]
+        public string? PhotoUrl { get; set; }
+        
+        // Employment
+        public DateTime? StartDate { get; set; }
+        
+        public ContractStatus ContractStatus { get; set; } = ContractStatus.Pending;
+        
+        // Finance
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal NetSalary { get; set; } = 0; // Net Maaş
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal SgkPremium { get; set; } = 0; // SGK Primi / Brüt Maliyet
+        
+        // Shift Pattern
+        [MaxLength(200)]
+        public string? WeeklyShiftPattern { get; set; } // e.g., "Pzt-Cum: 09:00-18:00"
+        
+        // Navigation
+        public ICollection<TimeEntry> TimeEntries { get; set; } = new List<TimeEntry>();
+    }
+    
+    // HR - Time Entry (Puantaj)
+    public class TimeEntry : BaseEntity
+    {
+        public Guid StaffId { get; set; }
+        public StaffProfile Staff { get; set; }
+        
+        public DateTime Date { get; set; }
+        
+        public DateTime? ClockIn { get; set; }
+        
+        public DateTime? ClockOut { get; set; }
+        
+        // Computed field
+        [NotMapped]
+        public double TotalHours
+        {
+            get
+            {
+                if (ClockIn.HasValue && ClockOut.HasValue)
+                {
+                    return (ClockOut.Value - ClockIn.Value).TotalHours;
+                }
+                return 0;
+            }
+        }
     }
 
     // Abstract Base for SaaS Multi-tenancy
@@ -54,21 +178,43 @@ namespace RestaurantPos.Api.Models
         public Guid TenantId { get; set; } // SaaS Tenant Indicator
     }
 
-    // 1. Product Model
+    // 1. Product Model - Enterprise PIM
     public class Product : BaseEntity
     {
         [Required]
         [MaxLength(200)]
         public string Name { get; set; }
 
+        // Pricing - Enterprise Level
         [Column(TypeName = "decimal(18,2)")]
         public decimal BasePrice { get; set; }
-
-        public Guid CategoryId { get; set; } // Foreign Key to a Category (assuming exists or just ID)
-
-        public bool IsActive { get; set; }
         
-        public StationType PreparationStation { get; set; } = StationType.Kitchen; // Default Kitchen
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? CostPrice { get; set; } // Maliyet fiyatı
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? DiscountedPrice { get; set; } // İndirimli/Kampanyalı fiyat
+
+        public Guid CategoryId { get; set; } // Foreign Key to a Category
+
+        // Operational Fields
+        public bool IsActive { get; set; } = true;
+        
+        // Allergen Information
+        public AllergenType Allergens { get; set; } = AllergenType.None;
+        
+        // Station Routing (Kitchen/Bar/Both)
+        public StationRouting StationRouting { get; set; } = StationRouting.KitchenOnly;
+        
+        // Legacy field - kept for backward compatibility
+        public StationType PreparationStation { get; set; } = StationType.Kitchen;
+        
+        // Printer Configuration (JSON array of printer GUIDs)
+        [MaxLength(500)]
+        public string? PrinterIds { get; set; } // Stored as JSON: ["guid1","guid2"]
+        
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
 
         // M-N Relationship Navigation
         public ICollection<ProductModifierGroup> ProductModifierGroups { get; set; }
@@ -155,6 +301,10 @@ namespace RestaurantPos.Api.Models
         [MaxLength(100)]
         public string TableName { get; set; } = string.Empty;
         
+        // Waiter tracking for commission calculation
+        public Guid? WaiterId { get; set; }
+        public User? Waiter { get; set; }
+        
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
 
@@ -201,5 +351,20 @@ namespace RestaurantPos.Api.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; } // Snapshot Price (e.g. 10.00)
+    }
+
+    // Shift/Time Tracking Model
+    public class Shift : BaseEntity
+    {
+        public Guid UserId { get; set; }
+        public User User { get; set; }
+        
+        public DateTime ClockIn { get; set; }
+        public DateTime? ClockOut { get; set; }
+        
+        // Calculated field
+        public double TotalHours => ClockOut.HasValue 
+            ? (ClockOut.Value - ClockIn).TotalHours 
+            : 0;
     }
 }

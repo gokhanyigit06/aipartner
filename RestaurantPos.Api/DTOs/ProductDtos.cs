@@ -8,8 +8,14 @@ namespace RestaurantPos.Api.DTOs
         public Guid Id { get; set; }
         public string Name { get; set; }
         public decimal BasePrice { get; set; }
+        public decimal? CostPrice { get; set; }
+        public decimal? DiscountedPrice { get; set; }
         public bool IsActive { get; set; }
         public Guid CategoryId { get; set; }
+        public int Allergens { get; set; } // AllergenType as int
+        public int StationRouting { get; set; } // StationRouting as int
+        public string? PrinterIds { get; set; }
+        public string? ImageUrl { get; set; }
         public List<ModifierGroupDto> ModifierGroups { get; set; } = new();
     }
 
@@ -35,8 +41,15 @@ namespace RestaurantPos.Api.DTOs
     {
         public string Name { get; set; }
         public decimal BasePrice { get; set; }
+        public decimal? CostPrice { get; set; }
+        public decimal? DiscountedPrice { get; set; }
         public Guid CategoryId { get; set; }
-        public Guid TenantId { get; set; } 
+        public Guid TenantId { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int Allergens { get; set; } = 0;
+        public int StationRouting { get; set; } = 0;
+        public string? PrinterIds { get; set; }
+        public string? ImageUrl { get; set; }
         
         // Full Nested Structure for Creation
         public List<ModifierGroupCreateDto> ModifierGroups { get; set; } = new();

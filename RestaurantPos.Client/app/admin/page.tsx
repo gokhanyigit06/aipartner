@@ -35,6 +35,21 @@ import {
 } from "@/components/ui/chart"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+
+// --- Types ---
+interface DailySummary {
+    totalRevenue: number
+    totalOrders: number
+    activeTables: number
+    bestSellingProducts: BestSellingProduct[]
+}
+
+interface BestSellingProduct {
+    productName: string
+    quantity: number
+    revenue: number
+}
 
 // --- Mock Data ---
 
@@ -71,6 +86,34 @@ const recentOrders = [
 // --- Components ---
 
 export default function AdminDashboardPage() {
+    const [summary, setSummary] = React.useState<DailySummary | null>(null)
+    const [loading, setLoading] = React.useState(true)
+
+    React.useEffect(() => {
+        const fetchDailySummary = async () => {
+            try {
+                const response = await api.get('/reports/daily-summary')
+                setSummary(response.data)
+            } catch (error) {
+                console.error('Failed to fetch daily summary:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchDailySummary()
+    }, [])
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('tr-TR', {
+            style: 'currency',
+            currency: 'TRY',
+            minimumFractionDigits: 2
+        }).format(amount)
+    }
+
+    const topProduct = summary?.bestSellingProducts[0]
+
     return (
         <div className="flex flex-col gap-6 p-2 lg:p-4 animate-in fade-in duration-500">
 
@@ -88,32 +131,32 @@ export default function AdminDashboardPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
                     title="Günlük Ciro"
-                    value="12,500 ₺"
-                    description="+20.1% geçen haftaya göre"
+                    value={loading ? "Yükleniyor..." : formatCurrency(summary?.totalRevenue || 0)}
+                    description="Bugünkü toplam gelir"
                     icon={DollarSign}
                     trend="up"
                     gradient="from-blue-500 to-blue-600"
                 />
                 <KpiCard
                     title="Toplam Sipariş"
-                    value="48"
-                    description="+4 yeni sipariş son 1 saatte"
+                    value={loading ? "..." : String(summary?.totalOrders || 0)}
+                    description="Bugün ödenen sipariş sayısı"
                     icon={Package}
                     trend="up"
                     gradient="from-indigo-500 to-purple-600"
                 />
                 <KpiCard
                     title="Aktif Masalar"
-                    value="12"
-                    description="Toplam 20 masadan 12'si dolu"
+                    value={loading ? "..." : String(summary?.activeTables || 0)}
+                    description="Şu anda dolu olan masalar"
                     icon={Users}
                     trend="neutral"
                     gradient="from-orange-400 to-pink-600"
                 />
                 <KpiCard
                     title="En Çok Satan"
-                    value="İskender"
-                    description="Bugün 18 porsiyon satıldı"
+                    value={loading ? "..." : topProduct?.productName || "Veri yok"}
+                    description={loading ? "..." : topProduct ? `Bugün ${topProduct.quantity} adet satıldı` : "Henüz satış yok"}
                     icon={UtensilsCrossed}
                     trend="up"
                     gradient="from-emerald-500 to-teal-600"

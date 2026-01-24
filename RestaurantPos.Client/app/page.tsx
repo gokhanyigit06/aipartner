@@ -117,10 +117,15 @@ export default function PosPage() {
           });
         });
       })
-      .catch(err => console.error("SignalR POS Load Error: ", err));
+      .catch(err => {
+        console.warn("SignalR bağlantısı kurulamadı (Backend çalışmıyor olabilir):", err.message);
+        // Don't show error to user, just log it
+      });
 
     return () => {
-      connection.stop();
+      connection.stop().catch(() => {
+        // Ignore stop errors
+      });
     };
   }, []);
 
@@ -187,24 +192,76 @@ export default function PosPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
-              <Card
-                key={product.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow border-slate-200 active:scale-95 duration-100"
-                onClick={() => handleProductClick(product)}
-              >
-                <CardHeader className="p-4">
-                  <CardTitle className="text-lg font-semibold text-center select-none">
-                    {product.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-center">
-                  <span className="text-xl font-bold text-green-600">
-                    {product.basePrice} ₺
-                  </span>
-                </CardContent>
-              </Card>
-            ))}
+            {products.map((product) => {
+              const hasDiscount = product.discountedPrice && product.discountedPrice < product.basePrice
+              const hasAllergens = product.allergens && product.allergens > 0
+              const displayPrice = hasDiscount ? product.discountedPrice : product.basePrice
+
+              return (
+                <Card
+                  key={product.id}
+                  className="cursor-pointer hover:shadow-lg transition-all border-slate-200 active:scale-95 duration-100 relative overflow-hidden group"
+                  onClick={() => handleProductClick(product)}
+                >
+                  {/* Allergen Warning Badge */}
+                  {hasAllergens && (
+                    <div className="absolute top-2 right-2 z-10 bg-yellow-500 text-white rounded-full p-1.5 shadow-lg animate-pulse">
+                      <span className="text-sm font-bold">⚠️</span>
+                    </div>
+                  )}
+
+                  {/* Discount Badge */}
+                  {hasDiscount && (
+                    <div className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg">
+                      İNDİRİM
+                    </div>
+                  )}
+
+                  {/* Product Image (if available) */}
+                  {product.imageUrl && (
+                    <div className="w-full h-32 overflow-hidden bg-slate-100">
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-lg font-semibold text-center select-none">
+                      {product.name}
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardContent className="p-4 pt-0 text-center space-y-1">
+                    {hasDiscount ? (
+                      <>
+                        {/* Original Price - Strikethrough */}
+                        <div className="text-sm text-slate-400 line-through">
+                          {product.basePrice} ₺
+                        </div>
+                        {/* Discounted Price - Large and Red */}
+                        <div className="text-2xl font-bold text-red-600">
+                          {product.discountedPrice} ₺
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-xl font-bold text-green-600">
+                        {product.basePrice} ₺
+                      </span>
+                    )}
+
+                    {/* Allergen Info Text */}
+                    {hasAllergens && (
+                      <div className="text-xs text-yellow-700 font-medium mt-2">
+                        Alerjen içerir
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
 

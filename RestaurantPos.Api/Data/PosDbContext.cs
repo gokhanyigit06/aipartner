@@ -18,6 +18,12 @@ namespace RestaurantPos.Api.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<OrderItemModifier> OrderItemModifiers { get; set; }
         public DbSet<Table> Tables { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<Shift> Shifts { get; set; }
+        
+        // HR System
+        public DbSet<StaffProfile> StaffProfiles { get; set; }
+        public DbSet<TimeEntry> TimeEntries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,6 +56,20 @@ namespace RestaurantPos.Api.Data
                 .HasForeignKey(oim => oim.OrderItemId)
                 .OnDelete(DeleteBehavior.Cascade);
             
+            // Configure 1-to-1 User <-> StaffProfile
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.StaffProfile)
+                .WithOne(sp => sp.User)
+                .HasForeignKey<StaffProfile>(sp => sp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Configure StaffProfile -> TimeEntries
+            modelBuilder.Entity<StaffProfile>()
+                .HasMany(sp => sp.TimeEntries)
+                .WithOne(te => te.Staff)
+                .HasForeignKey(te => te.StaffId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
             // Seed Users
             // Simple hash for "1234" (using SHA256 for demo purposes)
             // Ideally use a proper password hasher
@@ -66,7 +86,5 @@ namespace RestaurantPos.Api.Data
                 new User { Id = Guid.NewGuid(), TenantId = tenantId, Username = "kasa", PasswordHash = hash1234, Role = UserRole.Cashier }
             );
         }
-
-        public DbSet<User> Users { get; set; }
     }
 }

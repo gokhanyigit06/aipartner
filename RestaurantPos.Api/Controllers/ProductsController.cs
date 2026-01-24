@@ -28,8 +28,14 @@ namespace RestaurantPos.Api.Controllers
                     Id = p.Id,
                     Name = p.Name,
                     BasePrice = p.BasePrice,
+                    CostPrice = p.CostPrice,
+                    DiscountedPrice = p.DiscountedPrice,
                     IsActive = p.IsActive,
                     CategoryId = p.CategoryId,
+                    Allergens = (int)p.Allergens,
+                    StationRouting = (int)p.StationRouting,
+                    PrinterIds = p.PrinterIds,
+                    ImageUrl = p.ImageUrl,
                     ModifierGroups = p.ProductModifierGroups
                         .OrderBy(pmg => pmg.SortOrder)
                         .Select(pmg => new ModifierGroupDto
@@ -63,9 +69,15 @@ namespace RestaurantPos.Api.Controllers
                 Id = Guid.NewGuid(),
                 Name = dto.Name,
                 BasePrice = dto.BasePrice,
+                CostPrice = dto.CostPrice,
+                DiscountedPrice = dto.DiscountedPrice,
                 CategoryId = dto.CategoryId,
                 TenantId = dto.TenantId,
-                IsActive = true,
+                IsActive = dto.IsActive,
+                Allergens = (AllergenType)dto.Allergens,
+                StationRouting = (StationRouting)dto.StationRouting,
+                PrinterIds = dto.PrinterIds,
+                ImageUrl = dto.ImageUrl,
                 
                 // 2. Create ProductModifierGroups (Bridge) + ModifierGroups + Modifiers
                 // We map to ProductModifierGroups because that is the relationship property.
@@ -81,11 +93,13 @@ namespace RestaurantPos.Api.Controllers
                         SelectionType = (SelectionType)mg.SelectionType,
                         MinSelection = mg.MinSelection,
                         MaxSelection = mg.MaxSelection,
+                        TenantId = dto.TenantId,
                         Modifiers = mg.Modifiers.Select(m => new Modifier
                         {
                             Id = Guid.NewGuid(),
                             Name = m.Name,
-                            PriceAdjustment = m.PriceAdjustment
+                            PriceAdjustment = m.PriceAdjustment,
+                            TenantId = dto.TenantId
                         }).ToList()
                     }
                 }).ToList()
