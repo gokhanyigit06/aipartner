@@ -4,7 +4,7 @@ namespace RestaurantPos.Api.DTOs
     {
         // TenantId & Table info
         public Guid TenantId { get; set; }
-        public string TableId { get; set; } // Changed to string
+        public Guid? TableId { get; set; } // Changed to Guid? to match Entity
         public string TableName { get; set; } // Added TableName
 
         // We can generate OrderNumber backend side, or accept it if offline-first
@@ -37,6 +37,7 @@ namespace RestaurantPos.Api.DTOs
         public string TableName { get; set; }
         public decimal TotalAmount { get; set; }
         public string Status { get; set; }
+        public string? PaymentMethod { get; set; }
         public List<OrderItemDto> Items { get; set; } = new();
     }
 
@@ -45,6 +46,7 @@ namespace RestaurantPos.Api.DTOs
         public string ProductName { get; set; }
         public int Quantity { get; set; }
         public string? Notes { get; set; }
+        public int PreparationStation { get; set; } // 0=Kitchen, 1=Bar
         public List<OrderItemModifierDto> Modifiers { get; set; } = new();
     }
 

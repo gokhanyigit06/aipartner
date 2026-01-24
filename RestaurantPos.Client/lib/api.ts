@@ -1,12 +1,77 @@
-import { ProductDto } from "@/types/pos";
-import { OrderCreateDto } from "@/types/order";
+import { ProductDto, Table, TableStatus } from "@/types/pos";
+import { OrderCreateDto, OrderDto } from "@/types/order";
+import { useAuthStore } from "@/store/authStore";
 
 const API_BASE_URL = "http://localhost:5001/api";
+
+const getAuthHeaders = () => {
+    const token = useAuthStore.getState().user?.token;
+    return {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+};
+
+export async function getTables(): Promise<Table[]> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tables`, {
+            cache: "no-store",
+            headers: getAuthHeaders(),
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to fetch tables:", error);
+        return [];
+    }
+}
+
+export async function createTable(name: string, capacity: number): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tables`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ name, capacity, status: TableStatus.Free })
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Failed to create table:", error);
+        return false;
+    }
+}
+
+export async function deleteTable(id: string): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tables/${id}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Failed to delete table:", error);
+        return false;
+    }
+}
+
+export async function updateTableStatus(id: string, status: TableStatus): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tables/${id}/status`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(status)
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Failed to update table status:", error);
+        return false;
+    }
+}
 
 export async function getProducts(): Promise<ProductDto[]> {
     try {
         const response = await fetch(`${API_BASE_URL}/products`, {
-            cache: "no-store", // Ensure fresh data
+            cache: "no-store",
+            headers: getAuthHeaders(),
         });
 
         if (!response.ok) {
@@ -20,13 +85,30 @@ export async function getProducts(): Promise<ProductDto[]> {
     }
 }
 
+export async function createProduct(productData: any): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/products`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(productData),
+        });
+
+        if (!response.ok || response.status !== 201) {
+            const errorText = await response.text();
+            throw new Error(`Error creating product: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        return true;
+    } catch (error) {
+        console.error("Failed to create product:", error);
+        return false;
+    }
+}
+
 export async function createOrder(orderData: OrderCreateDto): Promise<boolean> {
     try {
         const response = await fetch(`${API_BASE_URL}/orders`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(orderData),
         });
 
@@ -39,5 +121,94 @@ export async function createOrder(orderData: OrderCreateDto): Promise<boolean> {
     } catch (error) {
         console.error("Failed to create order:", error);
         return false;
+    }
+}
+
+export async function getActiveOrders(): Promise<any[]> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/active`, {
+            cache: "no-store",
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error fetching active orders: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to fetch active orders:", error);
+        return [];
+    }
+}
+
+export async function markOrderAsReady(orderId: string): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/${orderId}/ready`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error marking order ready: ${response.statusText}`);
+        }
+        return true;
+    } catch (error) {
+        console.error("Failed to mark order ready:", error);
+        return false;
+    }
+}
+
+export async function getCashierOrders(): Promise<OrderDto[]> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/cashier`, {
+            cache: "no-store",
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error fetching cashier orders: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to fetch cashier orders:", error);
+        return [];
+    }
+}
+
+export async function payOrder(orderId: string, paymentMethod: string): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/${orderId}/checkout?paymentMethod=${encodeURIComponent(paymentMethod)}`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error paying order: ${response.statusText}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error("Failed to pay order:", error);
+        return false;
+    }
+}
+
+export async function login(username: string, password: string): Promise<any> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Login failed:", error);
+        throw error;
     }
 }

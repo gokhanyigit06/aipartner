@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RestaurantPos.Api.Data;
 using RestaurantPos.Api.DTOs;
 using RestaurantPos.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RestaurantPos.Api.Controllers
 {
@@ -53,6 +54,7 @@ namespace RestaurantPos.Api.Controllers
 
         // POST: api/Products
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ProductDto>> CreateProduct(ProductCreateDto dto)
         {
             // 1. Create Product

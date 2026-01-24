@@ -4,6 +4,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace RestaurantPos.Api.Models
 {
     // Enums
+    public enum StationType
+    {
+        Kitchen = 0,
+        Bar = 1
+    }
+
     public enum SelectionType
     {
         Single = 0,
@@ -18,6 +24,26 @@ namespace RestaurantPos.Api.Models
         Served = 3,
         Paid = 4,
         Cancelled = 5
+    }
+
+    public enum UserRole
+    {
+        Admin = 0,
+        Waiter = 1,
+        Kitchen = 2,
+        Cashier = 3
+    }
+    
+    public class User : BaseEntity
+    {
+        [Required]
+        [MaxLength(50)]
+        public string Username { get; set; }
+        
+        [Required]
+        public string PasswordHash { get; set; }
+        
+        public UserRole Role { get; set; }
     }
 
     // Abstract Base for SaaS Multi-tenancy
@@ -41,6 +67,8 @@ namespace RestaurantPos.Api.Models
         public Guid CategoryId { get; set; } // Foreign Key to a Category (assuming exists or just ID)
 
         public bool IsActive { get; set; }
+        
+        public StationType PreparationStation { get; set; } = StationType.Kitchen; // Default Kitchen
 
         // M-N Relationship Navigation
         public ICollection<ProductModifierGroup> ProductModifierGroups { get; set; }
@@ -99,15 +127,39 @@ namespace RestaurantPos.Api.Models
 
     // --- Order Models ---
 
+    public enum TableStatus
+    {
+        Free = 0,
+        Occupied = 1,
+        Reserved = 2
+    }
+
+    // New Table Model
+    public class Table : BaseEntity
+    {
+        [Required]
+        [MaxLength(50)]
+        public string Name { get; set; } // e.g. "Bahçe 1"
+
+        public int Capacity { get; set; }
+
+        public TableStatus Status { get; set; }
+    }
+
     public class Order : BaseEntity
     {
         public string OrderNumber { get; set; }
-        public string TableId { get; set; } // Changed from Guid to string to match DTOs if needed, or keep Guid if system uses Guids. Let's make it flexible.
+        public Guid? TableId { get; set; } // Can be nullable if generic order
+        public Table Table { get; set; } // Foreign Key Navigation
+
         [MaxLength(100)]
         public string TableName { get; set; } = string.Empty;
         
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
+
+        [MaxLength(50)]
+        public string? PaymentMethod { get; set; }
         
         public OrderStatus Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -122,6 +174,7 @@ namespace RestaurantPos.Api.Models
         public Order Order { get; set; }
 
         public Guid ProductId { get; set; } // Reference to original product
+        public Product Product { get; set; } // Navigation Property
         
         [MaxLength(200)]
         public string ProductName { get; set; } // Snapshot

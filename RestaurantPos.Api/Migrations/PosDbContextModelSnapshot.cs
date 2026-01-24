@@ -90,12 +90,15 @@ namespace RestaurantPos.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<string>("TableId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid?>("TableId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("TableName")
                         .IsRequired()
@@ -109,6 +112,8 @@ namespace RestaurantPos.Api.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TableId");
 
                     b.ToTable("Orders");
                 });
@@ -197,6 +202,9 @@ namespace RestaurantPos.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("PreparationStation")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -226,6 +234,91 @@ namespace RestaurantPos.Api.Migrations
                     b.ToTable("ProductModifierGroups");
                 });
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.Table", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tables");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a857b788-9a96-4f56-9d71-8b629380b876"),
+                            PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                            Role = 0,
+                            TenantId = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
+                            Username = "admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("ada35542-adce-494c-9037-e324f6db3a8b"),
+                            PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                            Role = 1,
+                            TenantId = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
+                            Username = "garson"
+                        },
+                        new
+                        {
+                            Id = new Guid("227722f7-e5e2-4b8d-b643-67f059d13f9a"),
+                            PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                            Role = 2,
+                            TenantId = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
+                            Username = "mutfak"
+                        },
+                        new
+                        {
+                            Id = new Guid("04f2ce9a-be31-4ad5-8aa1-da8c17559a68"),
+                            PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                            Role = 3,
+                            TenantId = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
+                            Username = "kasa"
+                        });
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.Modifier", b =>
                 {
                     b.HasOne("RestaurantPos.Api.Models.ModifierGroup", "ModifierGroup")
@@ -235,6 +328,15 @@ namespace RestaurantPos.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("ModifierGroup");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.Order", b =>
+                {
+                    b.HasOne("RestaurantPos.Api.Models.Table", "Table")
+                        .WithMany()
+                        .HasForeignKey("TableId");
+
+                    b.Navigation("Table");
                 });
 
             modelBuilder.Entity("RestaurantPos.Api.Models.OrderItem", b =>

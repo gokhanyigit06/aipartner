@@ -1,110 +1,245 @@
-import React from "react";
-import { DollarSign, ShoppingBag, Users, Activity } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client"
+
+import * as React from "react"
+import {
+    DollarSign,
+    Package,
+    Users,
+    UtensilsCrossed,
+    TrendingUp,
+    Clock,
+    MoreHorizontal
+} from "lucide-react"
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import {
+    ChartConfig,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+
+// --- Mock Data ---
+
+const chartData = [
+    { time: "10:00", sales: 1200 },
+    { time: "11:00", sales: 2100 },
+    { time: "12:00", sales: 4500 },
+    { time: "13:00", sales: 3800 },
+    { time: "14:00", sales: 2400 },
+    { time: "15:00", sales: 1800 },
+    { time: "16:00", sales: 3200 },
+    { time: "17:00", sales: 5600 },
+    { time: "18:00", sales: 7200 },
+    { time: "19:00", sales: 8400 },
+    { time: "20:00", sales: 6900 },
+    { time: "21:00", sales: 4100 },
+]
+
+const chartConfig = {
+    sales: {
+        label: "Satış (TL)",
+        color: "hsl(var(--primary))",
+    },
+} satisfies ChartConfig
+
+const recentOrders = [
+    { id: "SIP-1024", table: "Masa 4", total: "450.00 ₺", status: "Hazırlanıyor", time: "2 dk önce" },
+    { id: "SIP-1023", table: "Masa 1", total: "1,250.00 ₺", status: "Tamamlandı", time: "5 dk önce" },
+    { id: "SIP-1022", table: "Paket Servis", total: "320.00 ₺", status: "Yolda", time: "12 dk önce" },
+    { id: "SIP-1021", table: "Masa 8", total: "890.00 ₺", status: "Tamamlandı", time: "15 dk önce" },
+    { id: "SIP-1020", table: "Masa 12", total: "210.00 ₺", status: "İptal", time: "22 dk önce" },
+]
+
+// --- Components ---
 
 export default function AdminDashboardPage() {
     return (
-        <div className="space-y-8">
+        <div className="flex flex-col gap-6 p-2 lg:p-4 animate-in fade-in duration-500">
 
-            {/* Page Title */}
-            <div>
-                <h1 className="text-3xl font-bold text-slate-800">Panel Özeti</h1>
-                <p className="text-slate-500 mt-1">Hoşgeldiniz, işletmenizin anlık durumu.</p>
+            {/* Header Section */}
+            <div className="flex flex-col gap-1">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                    Dashboard
+                </h1>
+                <p className="text-muted-foreground">
+                    İşletmenizin anlık performansı ve özet verileri.
+                </p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    title="Günlük Satış"
-                    value="₺12,450"
-                    change="+15% geçen güne göre"
+            {/* KPI Cards Section */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <KpiCard
+                    title="Günlük Ciro"
+                    value="12,500 ₺"
+                    description="+20.1% geçen haftaya göre"
                     icon={DollarSign}
                     trend="up"
+                    gradient="from-blue-500 to-blue-600"
                 />
-                <StatCard
-                    title="Aktif Siparişler"
-                    value="8"
-                    change="Şu an hazırlanıyor"
-                    icon={ShoppingBag}
-                    trend="neutral"
+                <KpiCard
+                    title="Toplam Sipariş"
+                    value="48"
+                    description="+4 yeni sipariş son 1 saatte"
+                    icon={Package}
+                    trend="up"
+                    gradient="from-indigo-500 to-purple-600"
                 />
-                <StatCard
-                    title="Masa Doluluk"
-                    value="%65"
-                    change="12/20 Masa dolu"
+                <KpiCard
+                    title="Aktif Masalar"
+                    value="12"
+                    description="Toplam 20 masadan 12'si dolu"
                     icon={Users}
-                    trend="up"
+                    trend="neutral"
+                    gradient="from-orange-400 to-pink-600"
                 />
-                <StatCard
-                    title="Sistem Durumu"
-                    value="Normal"
-                    change="Tüm servisler aktif"
-                    icon={Activity}
+                <KpiCard
+                    title="En Çok Satan"
+                    value="İskender"
+                    description="Bugün 18 porsiyon satıldı"
+                    icon={UtensilsCrossed}
                     trend="up"
+                    gradient="from-emerald-500 to-teal-600"
                 />
             </div>
 
-            {/* Placeholder Charts / Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="col-span-1 lg:col-span-2 shadow-sm border-slate-200">
+            {/* Main Content: Chart & Table */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+
+                {/* Sales Chart */}
+                <Card className="col-span-4 border-none shadow-xl bg-white/50 backdrop-blur-sm dark:bg-zinc-900/50">
                     <CardHeader>
                         <CardTitle>Saatlik Satış Grafiği</CardTitle>
+                        <CardDescription>Bugünen ait saatlik ciro dağılımı.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="h-64 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
-                            Grafik Alanı (Recharts entegrasyonu yapılacak)
-                        </div>
+                    <CardContent className="pl-2">
+                        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                            <BarChart accessibilityLayer data={chartData}>
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis
+                                    dataKey="time"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    tickFormatter={(value) => value}
+                                />
+                                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                                <Bar
+                                    dataKey="sales"
+                                    radius={[8, 8, 0, 0]}
+                                    fill="var(--color-sales)"
+                                    fillOpacity={0.8}
+                                />
+                            </BarChart>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
 
-                <Card className="col-span-1 shadow-sm border-slate-200">
+                {/* Recent Orders Table */}
+                <Card className="col-span-3 border-none shadow-xl bg-white/50 backdrop-blur-sm dark:bg-zinc-900/50">
                     <CardHeader>
-                        <CardTitle>Son Hareketler</CardTitle>
+                        <CardTitle>Son Siparişler</CardTitle>
+                        <CardDescription>Sisteme düşen son 5 sipariş.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                                        <span className="text-slate-700 font-medium">Masa {i + 2} Siparişi</span>
-                                    </div>
-                                    <span className="text-slate-500">2 dk önce</span>
-                                </div>
-                            ))}
-                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[100px]">Sipariş No</TableHead>
+                                    <TableHead>Masa</TableHead>
+                                    <TableHead>Durum</TableHead>
+                                    <TableHead className="text-right">Tutar</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {recentOrders.map((order) => (
+                                    <TableRow key={order.id}>
+                                        <TableCell className="font-medium">{order.id}</TableCell>
+                                        <TableCell>{order.table}</TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    order.status === "Tamamlandı" ? "default" :
+                                                        order.status === "Hazırlanıyor" ? "secondary" :
+                                                            order.status === "İptal" ? "destructive" : "outline"
+                                                }
+                                                className="text-xs"
+                                            >
+                                                {order.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right font-bold">{order.total}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
+
             </div>
         </div>
-    );
+    )
 }
 
-// Simple Stat Card Component
-// Simple Stat Card Component
-interface StatCardProps {
-    title: string;
-    value: string;
-    change: string;
-    icon: React.ElementType; // Better than any
-    trend: 'up' | 'neutral' | 'down';
-}
+// --- Helper Components ---
 
-function StatCard({ title, value, change, icon: Icon, trend }: StatCardProps) {
+function KpiCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+    trend,
+    gradient
+}: {
+    title: string
+    value: string
+    description: string
+    icon: React.ElementType
+    trend: 'up' | 'down' | 'neutral'
+    gradient: string
+}) {
     return (
-        <Card className="shadow-sm border-slate-200 hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">
+        <Card className="border-none shadow-lg overflow-hidden relative group hover:-translate-y-1 transition-all duration-300">
+            <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
+                <Icon className="w-24 h-24" />
+            </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                     {title}
                 </CardTitle>
-                <Icon className="h-4 w-4 text-slate-400" />
+                <div className={`p-2 rounded-full bg-gradient-to-br ${gradient} text-white shadow-md`}>
+                    <Icon className="h-4 w-4" />
+                </div>
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold text-slate-800">{value}</div>
-                <p className={`text-xs mt-1 ${trend === 'up' ? 'text-green-600' : 'text-slate-500'}`}>
-                    {change}
-                </p>
+            <CardContent className="relative z-10">
+                <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
+                    {value}
+                </div>
+                <div className="flex items-center text-xs text-muted-foreground mt-1">
+                    {trend === 'up' ? <TrendingUp className="mr-1 h-3 w-3 text-green-500" /> : null}
+                    {trend === 'neutral' ? <Clock className="mr-1 h-3 w-3 text-yellow-500" /> : null}
+                    <span className={trend === 'up' ? 'text-green-600 font-medium' : ''}>{description}</span>
+                </div>
             </CardContent>
+            {/* Decorative gradient background roughly */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-white/10 pointer-events-none" />
         </Card>
-    );
+    )
 }

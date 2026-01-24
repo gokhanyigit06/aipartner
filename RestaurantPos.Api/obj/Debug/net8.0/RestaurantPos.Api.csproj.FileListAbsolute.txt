@@ -102,3 +102,12 @@
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/obj/Debug/net8.0/RestaurantPos.Api.pdb
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/obj/Debug/net8.0/RestaurantPos.Api.genruntimeconfig.cache
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/obj/Debug/net8.0/ref/RestaurantPos.Api.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/obj/Debug/net8.0/RestaurantPos.Api.sourcelink.json
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Abstractions.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Logging.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll

@@ -25,6 +25,7 @@ export interface OrderDto {
     tableName: string; // Add
     totalAmount: number;
     status: string;
+    paymentMethod?: string; // Add
     items?: OrderItemDto[];
 }
 
