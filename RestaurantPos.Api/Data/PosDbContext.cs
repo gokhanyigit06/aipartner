@@ -1,24 +1,30 @@
 using Microsoft.EntityFrameworkCore;
 using RestaurantPos.Api.Models;
+using RestaurantPos.Api.Services;
+using System.Linq.Expressions;
 
 namespace RestaurantPos.Api.Data
 {
     public class PosDbContext : DbContext
     {
-        public PosDbContext(DbContextOptions<PosDbContext> options) : base(options)
+        private readonly ITenantResolver _tenantResolver;
+
+        public PosDbContext(DbContextOptions<PosDbContext> options, ITenantResolver tenantResolver) : base(options)
         {
+            _tenantResolver = tenantResolver;
         }
 
         public DbSet<Product> Products { get; set; }
         public DbSet<ModifierGroup> ModifierGroups { get; set; }
         public DbSet<Modifier> Modifiers { get; set; }
         public DbSet<ProductModifierGroup> ProductModifierGroups { get; set; }
-        
+        public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<OrderItemModifier> OrderItemModifiers { get; set; }
         public DbSet<Table> Tables { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Customer> Customers { get; set; }
         public DbSet<Shift> Shifts { get; set; }
         
         // HR System
@@ -28,10 +34,33 @@ namespace RestaurantPos.Api.Data
         // Inventory
         public DbSet<RawMaterial> RawMaterials { get; set; }
         public DbSet<RecipeItem> RecipeItems { get; set; }
+        public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+        public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
+        public DbSet<StockLot> StockLots { get; set; }
+        public DbSet<Supplier> Suppliers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Global Query Filter for Multi-tenancy
+            // This ensures every query automatically filters by the current TenantId
+            Expression<Func<Guid>> tenantIdAccessor = () => _tenantResolver.GetTenantId();
+
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+                {
+                    // e => e.TenantId == _tenantResolver.GetTenantId()
+                    var param = Expression.Parameter(entityType.ClrType, "e");
+                    var prop = Expression.Property(param, nameof(BaseEntity.TenantId));
+                    var filter = Expression.Lambda(
+                        Expression.Equal(prop, Expression.Invoke(tenantIdAccessor)), 
+                        param);
+                        
+                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+                }
+            }
 
             // Configure Many-to-Many Relationship Bridge
             modelBuilder.Entity<ProductModifierGroup>()
@@ -52,7 +81,14 @@ namespace RestaurantPos.Api.Data
                 .HasMany(o => o.OrderItems)
                 .WithOne(oi => oi.Order)
                 .HasForeignKey(oi => oi.OrderId)
+                .HasForeignKey(oi => oi.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Customer)
+                .WithMany(c => c.Orders)
+                .HasForeignKey(o => o.CustomerId)
+                .OnDelete(DeleteBehavior.SetNull); // Müşteri silinirse siparişler kalsın
 
             modelBuilder.Entity<OrderItem>()
                 .HasMany(oi => oi.Modifiers)
@@ -87,6 +123,18 @@ namespace RestaurantPos.Api.Data
                 .HasForeignKey(r => r.RawMaterialId)
                 .OnDelete(DeleteBehavior.Restrict); // Prevent deleting RawMaterial if it's used in a recipe
             
+            // Configure PurchaseOrder Relationships
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasMany(po => po.Items)
+                .WithOne(poi => poi.PurchaseOrder)
+                .HasForeignKey(poi => poi.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasOne(po => po.Supplier)
+                .WithMany()
+                .HasForeignKey(po => po.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
             // Seed Users
             // Simple hash for "1234" (using SHA256 for demo purposes)
             // Ideally use a proper password hasher

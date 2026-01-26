@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RestaurantPos.Api.Data;
+using RestaurantPos.Api.Services;
 
 using RestaurantPos.Api.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -11,6 +12,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddDbContext<PosDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// SaaS Multi-Tenancy
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantResolver, HeaderTenantResolver>();
+builder.Services.AddScoped<ITenantService, TenantService>();
+
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IProcurementService, ProcurementService>();
+builder.Services.AddScoped<ITimeTrackingService, TimeTrackingService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+
+// Register MediatR (scans the current assembly for Handlers)
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 
 builder.Services.AddControllers();
@@ -93,6 +108,9 @@ app.UseCors("AllowNextJs");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// SaaS Tenant Resolution Middleware
+app.UseMiddleware<RestaurantPos.Api.Middleware.TenantMiddleware>();
 
 app.MapControllers();
 app.MapHub<KitchenHub>("/kitchenHub");

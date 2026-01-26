@@ -74,6 +74,40 @@ namespace RestaurantPos.Api.Models
         OPositive = 7,    // O+
         ONegative = 8     // O-
     }
+
+    public enum CustomerTier
+    {
+        Standard = 0,
+        Bronze = 1,     // %3 Puan
+        Silver = 2,     // %5 Puan
+        Gold = 3,       // %10 Puan
+        VIP = 4         // %15 Puan
+    }
+    
+    public class Customer : BaseEntity
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Name { get; set; }
+        
+        [Required]
+        [MaxLength(20)]
+        public string PhoneNumber { get; set; } // Unique Identifier for Search
+
+        public string? Email { get; set; }
+
+        public DateTime? BirthDate { get; set; }
+
+        public CustomerTier Tier { get; set; } = CustomerTier.Standard;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal LoyaltyPoints { get; set; } = 0; // Birikmiş Puanlar
+
+        public DateTime LastVisit { get; set; }
+
+        // Navigation
+        public ICollection<Order> Orders { get; set; }
+    }
     
     public class User : BaseEntity
     {
@@ -110,6 +144,9 @@ namespace RestaurantPos.Api.Models
         // Identity
         [MaxLength(20)]
         public string? StaffNo { get; set; } // Personel No
+
+        [MaxLength(6)]
+        public string? PinCode { get; set; } // Kiosk Giriş PIN
         
         public BloodType BloodType { get; set; } = BloodType.Unknown;
         
@@ -134,6 +171,9 @@ namespace RestaurantPos.Api.Models
         
         [Column(TypeName = "decimal(18,2)")]
         public decimal SgkPremium { get; set; } = 0; // SGK Primi / Brüt Maliyet
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal HourlyWage { get; set; } = 0; // Saatlik Ücret (Part-time veya Fazla Mesai için)
         
         // Shift Pattern
         [MaxLength(200)]
@@ -168,6 +208,26 @@ namespace RestaurantPos.Api.Models
                 return 0;
             }
         }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalCost { get; set; } = 0; // Hesaplanan Maliyet (Saat * Ücret)
+    }
+
+    // SaaS Tenant Model
+    public class Tenant
+    {
+        [Key]
+        public Guid Id { get; set; }
+        
+        [Required]
+        [MaxLength(100)]
+        public string Name { get; set; }
+
+        [MaxLength(100)]
+        public string? Domain { get; set; } // e.g. "burgerx" for burgerx.pos.com
+        
+        public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
     // Abstract Base for SaaS Multi-tenancy
@@ -301,6 +361,9 @@ namespace RestaurantPos.Api.Models
         public Guid? TableId { get; set; } // Can be nullable if generic order
         public Table Table { get; set; } // Foreign Key Navigation
 
+        public Guid? CustomerId { get; set; } // CRM Bağlantısı
+        public Customer? Customer { get; set; }
+
         [MaxLength(100)]
         public string TableName { get; set; } = string.Empty;
         
@@ -319,6 +382,13 @@ namespace RestaurantPos.Api.Models
 
         [Column(TypeName = "decimal(5,2)")]
         public decimal DiscountPercentage { get; set; } = 0; // e.g. 10.00 for 10%
+
+        // Financials (COGS & Profit) - Calculated upon payment
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalCost { get; set; } = 0; // Cost of Goods Sold
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal NetProfit { get; set; } = 0; // Revenue - Cost
 
         // Navigation
         public ICollection<OrderItem> OrderItems { get; set; }
@@ -414,5 +484,96 @@ namespace RestaurantPos.Api.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; } // Reçetedeki miktar
+    }
+
+    // --- Enterprise Inventory (FIFO) ---
+
+    // --- Procurement / Satın Alma ---
+
+    public enum PurchaseOrderStatus
+    {
+        Draft = 0,      // Taslak
+        Approved = 1,   // Onaylandı
+        Received = 2,   // Teslim Alındı (Stok Girişi Yapıldı)
+        Cancelled = 3   // İptal
+    }
+
+    public class Supplier : BaseEntity
+    {
+        [Required]
+        [MaxLength(200)]
+        public string Name { get; set; }
+
+        [MaxLength(50)]
+        public string? TaxNumber { get; set; }
+
+        [MaxLength(200)]
+        public string? VendorCode { get; set; } // Tedarikçi Kodu
+
+        public string? ContactInfo { get; set; }
+
+        public int LeadTimeDays { get; set; } = 3; // Ortalama Teslim Süresi
+    }
+
+    public class PurchaseOrder : BaseEntity
+    {
+        public Guid SupplierId { get; set; }
+        public Supplier Supplier { get; set; }
+
+        [MaxLength(50)]
+        public string OrderNumber { get; set; } // Sipariş No
+
+        [MaxLength(50)]
+        public string? InvoiceNumber { get; set; } // Fatura No (Teslim alırken girilir)
+        
+        public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.Draft;
+
+        public DateTime ExpectedDate { get; set; }
+        
+        public DateTime? ReceivedDate { get; set; }
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalAmount { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public ICollection<PurchaseOrderItem> Items { get; set; }
+    }
+
+    public class PurchaseOrderItem : BaseEntity
+    {
+        public Guid PurchaseOrderId { get; set; }
+        public PurchaseOrder PurchaseOrder { get; set; }
+
+        public Guid RawMaterialId { get; set; }
+        public RawMaterial RawMaterial { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Quantity { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal UnitPrice { get; set; } // Alış Birim Fiyatı
+    }
+
+    public class StockLot : BaseEntity
+    {
+        public Guid RawMaterialId { get; set; }
+        public RawMaterial RawMaterial { get; set; }
+
+        public Guid? PurchaseOrderId { get; set; }
+        public PurchaseOrder? PurchaseOrder { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal UnitCost { get; set; } // Alış Birim Maliyeti (FIFO için esas)
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal InitialQuantity { get; set; } // Giriş Miktarı
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal RemainingQuantity { get; set; } // Kalan Miktar
+
+        public DateTime ExpirationDate { get; set; }
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // FIFO Sorting Key
     }
 }

@@ -22,6 +22,45 @@ namespace RestaurantPos.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("BirthDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastVisit")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("LoyaltyPoints")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.Modifier", b =>
                 {
                     b.Property<Guid>("Id")
@@ -86,8 +125,14 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("DiscountPercentage")
                         .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("NetProfit")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("OrderNumber")
                         .IsRequired()
@@ -114,10 +159,15 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid?>("WaiterId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
 
                     b.HasIndex("TableId");
 
@@ -267,6 +317,79 @@ namespace RestaurantPos.Api.Migrations
                     b.ToTable("ProductModifierGroups");
                 });
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.PurchaseOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpectedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("ReceivedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("PurchaseOrders");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.PurchaseOrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("RawMaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseOrderId");
+
+                    b.HasIndex("RawMaterialId");
+
+                    b.ToTable("PurchaseOrderItems");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.RawMaterial", b =>
                 {
                     b.Property<Guid>("Id")
@@ -366,6 +489,9 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<int>("ContractStatus")
                         .HasColumnType("integer");
 
+                    b.Property<decimal>("HourlyWage")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("NetSalary")
                         .HasColumnType("decimal(18,2)");
 
@@ -376,6 +502,10 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<string>("PhotoUrl")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("PinCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
 
                     b.Property<decimal>("SgkPremium")
                         .HasColumnType("decimal(18,2)");
@@ -405,6 +535,78 @@ namespace RestaurantPos.Api.Migrations
                     b.ToTable("StaffProfiles");
                 });
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.StockLot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpirationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("InitialQuantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("PurchaseOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RawMaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RemainingQuantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseOrderId");
+
+                    b.HasIndex("RawMaterialId");
+
+                    b.ToTable("StockLots");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.Supplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContactInfo")
+                        .HasColumnType("text");
+
+                    b.Property<int>("LeadTimeDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TaxNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("VendorCode")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Suppliers");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.Table", b =>
                 {
                     b.Property<Guid>("Id")
@@ -430,6 +632,32 @@ namespace RestaurantPos.Api.Migrations
                     b.ToTable("Tables");
                 });
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.Tenant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Domain")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tenants");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.TimeEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -450,6 +678,9 @@ namespace RestaurantPos.Api.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -496,7 +727,7 @@ namespace RestaurantPos.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("71b05e0d-504a-4db4-9b1f-ff62e36ac409"),
+                            Id = new Guid("261f61e1-6311-4a34-a696-08c37a34b18b"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -506,7 +737,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("f71e14d8-b8cd-43f7-a544-b16b392652c0"),
+                            Id = new Guid("395d589e-d94a-48fc-87ac-9e54b60d9484"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -516,7 +747,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("4ab7c9f9-ec04-402a-8a1c-9a1af7251bbe"),
+                            Id = new Guid("34cea1da-6fe3-4e8b-b67d-f63f56d17c02"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -526,7 +757,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("dfda5b3f-ffe5-44c8-8396-f6af3f9073e0"),
+                            Id = new Guid("58e720bb-b1c0-4879-ac30-492024270f5d"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -549,6 +780,11 @@ namespace RestaurantPos.Api.Migrations
 
             modelBuilder.Entity("RestaurantPos.Api.Models.Order", b =>
                 {
+                    b.HasOne("RestaurantPos.Api.Models.Customer", "Customer")
+                        .WithMany("Orders")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("RestaurantPos.Api.Models.Table", "Table")
                         .WithMany()
                         .HasForeignKey("TableId");
@@ -556,6 +792,8 @@ namespace RestaurantPos.Api.Migrations
                     b.HasOne("RestaurantPos.Api.Models.User", "Waiter")
                         .WithMany()
                         .HasForeignKey("WaiterId");
+
+                    b.Navigation("Customer");
 
                     b.Navigation("Table");
 
@@ -611,6 +849,36 @@ namespace RestaurantPos.Api.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.PurchaseOrder", b =>
+                {
+                    b.HasOne("RestaurantPos.Api.Models.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.PurchaseOrderItem", b =>
+                {
+                    b.HasOne("RestaurantPos.Api.Models.PurchaseOrder", "PurchaseOrder")
+                        .WithMany("Items")
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RestaurantPos.Api.Models.RawMaterial", "RawMaterial")
+                        .WithMany()
+                        .HasForeignKey("RawMaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseOrder");
+
+                    b.Navigation("RawMaterial");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.RecipeItem", b =>
                 {
                     b.HasOne("RestaurantPos.Api.Models.Product", "Product")
@@ -652,6 +920,23 @@ namespace RestaurantPos.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.StockLot", b =>
+                {
+                    b.HasOne("RestaurantPos.Api.Models.PurchaseOrder", "PurchaseOrder")
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderId");
+
+                    b.HasOne("RestaurantPos.Api.Models.RawMaterial", "RawMaterial")
+                        .WithMany()
+                        .HasForeignKey("RawMaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseOrder");
+
+                    b.Navigation("RawMaterial");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.TimeEntry", b =>
                 {
                     b.HasOne("RestaurantPos.Api.Models.StaffProfile", "Staff")
@@ -661,6 +946,11 @@ namespace RestaurantPos.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.Customer", b =>
+                {
+                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("RestaurantPos.Api.Models.ModifierGroup", b =>
@@ -685,6 +975,11 @@ namespace RestaurantPos.Api.Migrations
                     b.Navigation("ProductModifierGroups");
 
                     b.Navigation("RecipeItems");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.PurchaseOrder", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("RestaurantPos.Api.Models.StaffProfile", b =>

@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestaurantPos.Api.Data;
+using RestaurantPos.Api.Data;
 using RestaurantPos.Api.Models;
+using RestaurantPos.Api.Services;
+using RestaurantPos.Api.DTOs;
 
 namespace RestaurantPos.Api.Controllers
 {
@@ -12,10 +15,12 @@ namespace RestaurantPos.Api.Controllers
     public class ReportsController : ControllerBase
     {
         private readonly PosDbContext _context;
+        private readonly IReportService _reportService;
 
-        public ReportsController(PosDbContext context)
+        public ReportsController(PosDbContext context, IReportService reportService)
         {
             _context = context;
+            _reportService = reportService;
         }
 
         [HttpGet("daily-summary")]
@@ -91,6 +96,18 @@ namespace RestaurantPos.Api.Controllers
                 .ToListAsync();
 
             return Ok(dailyReports);
+        }
+
+        [HttpGet("profit-loss")]
+        public async Task<IActionResult> GetProfitLossReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            // Zaman aralığı yönetimi
+            var start = startDate?.Date ?? DateTime.UtcNow.Date.AddDays(-30);
+            // endDate null ise bugünün sonuna kadar
+            var end = endDate?.Date.AddDays(1).AddTicks(-1) ?? DateTime.UtcNow.Date.AddDays(1).AddTicks(-1);
+
+            var report = await _reportService.GetProfitLossReportAsync(start, end);
+            return Ok(report);
         }
     }
 

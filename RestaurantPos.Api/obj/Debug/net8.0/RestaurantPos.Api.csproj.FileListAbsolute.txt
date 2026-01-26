@@ -111,3 +111,9 @@
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/MediatR.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/MediatR.Contracts.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/System.Diagnostics.DiagnosticSource.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/MediatR.Extensions.Microsoft.DependencyInjection.dll

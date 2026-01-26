@@ -270,7 +270,7 @@ export async function login(username: string, password: string): Promise<any> {
 
 // Generic API client for axios-like usage
 export const api = {
-    get: async (endpoint: string) => {
+    get: async <T = any>(endpoint: string) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             cache: "no-store",
             headers: getAuthHeaders(),
@@ -280,9 +280,9 @@ export const api = {
             throw new Error(errorText || response.statusText);
         }
         const text = await response.text();
-        return { data: text ? JSON.parse(text) : null };
+        return { data: text ? JSON.parse(text) : null as T };
     },
-    post: async (endpoint: string, data: any) => {
+    post: async <T = any>(endpoint: string, data: any) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: "POST",
             headers: getAuthHeaders(),
@@ -293,9 +293,9 @@ export const api = {
             throw new Error(errorText || response.statusText);
         }
         const text = await response.text();
-        return { data: text ? JSON.parse(text) : null };
+        return { data: text ? JSON.parse(text) : null as T };
     },
-    put: async (endpoint: string, data?: any) => {
+    put: async <T = any>(endpoint: string, data?: any) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: "PUT",
             headers: getAuthHeaders(),
@@ -306,9 +306,9 @@ export const api = {
             throw new Error(errorText || response.statusText);
         }
         const text = await response.text();
-        return { data: text ? JSON.parse(text) : null };
+        return { data: text ? JSON.parse(text) : null as T };
     },
-    delete: async (endpoint: string) => {
+    delete: async <T = any>(endpoint: string) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: "DELETE",
             headers: getAuthHeaders(),
@@ -318,7 +318,7 @@ export const api = {
             throw new Error(errorText || response.statusText);
         }
         const text = await response.text();
-        return { data: text ? JSON.parse(text) : null };
+        return { data: text ? JSON.parse(text) : null as T };
     }
 };
 

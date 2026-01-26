@@ -5,6 +5,8 @@ using RestaurantPos.Api.Data;
 using RestaurantPos.Api.DTOs;
 using RestaurantPos.Api.Hubs;
 using RestaurantPos.Api.Models;
+using RestaurantPos.Api.Events;
+using MediatR;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -18,12 +20,14 @@ namespace RestaurantPos.Api.Controllers
     {
         private readonly PosDbContext _context;
         private readonly IHubContext<KitchenHub> _hubContext;
+        private readonly IMediator _mediator;
         private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(PosDbContext context, IHubContext<KitchenHub> hubContext, ILogger<OrdersController> logger)
+        public OrdersController(PosDbContext context, IHubContext<KitchenHub> hubContext, IMediator mediator, ILogger<OrdersController> logger)
         {
             _context = context;
             _hubContext = hubContext;
+            _mediator = mediator;
             _logger = logger;
         }
 
@@ -243,13 +247,12 @@ namespace RestaurantPos.Api.Controllers
                 return BadRequest("Payment method is required.");
             }
 
-            // Start Transaction for Data Consistency
+            // Start Transaction for Data Consistency (Only for Status Update)
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Load order with items
+                // Load order
                 var order = await _context.Orders
-                    .Include(o => o.OrderItems)
                     .FirstOrDefaultAsync(o => o.Id == id);
 
                 if (order == null)
@@ -264,74 +267,19 @@ namespace RestaurantPos.Api.Controllers
 
                 _logger.LogInformation($"Starting checkout for Order {order.OrderNumber} ({id}).");
 
-                // 1. Inventory Management Logic
-                // Fetch relevant products and their recipes + raw materials
-                var productIds = order.OrderItems.Select(oi => oi.ProductId).Distinct().ToList();
-                
-                var productsWithRecipes = await _context.Products
-                    .Include(p => p.RecipeItems)
-                        .ThenInclude(r => r.RawMaterial)
-                    .Where(p => productIds.Contains(p.Id))
-                    .ToListAsync();
-
-                var stockAlerts = new List<string>();
-
-                foreach (var orderItem in order.OrderItems)
-                {
-                    var product = productsWithRecipes.FirstOrDefault(p => p.Id == orderItem.ProductId);
-                    if (product == null) continue; // Should not happen if data integrity is maintained
-
-                    if (product.RecipeItems != null && product.RecipeItems.Any())
-                    {
-                        foreach (var recipeItem in product.RecipeItems)
-                        {
-                            if (recipeItem.RawMaterial == null) continue;
-
-                            // Calculation: Order Quantity * Recipe Amount
-                            var deductionAmount = orderItem.Quantity * recipeItem.Amount;
-                            var rawMaterial = recipeItem.RawMaterial;
-
-                            _logger.LogInformation($"Deducting stock: {rawMaterial.Name} - Amount: {deductionAmount} (Current: {rawMaterial.CurrentStock})");
-
-                            // Deduct from stock
-                            rawMaterial.CurrentStock -= deductionAmount;
-
-                            // Check Critical Stock Level
-                            if (rawMaterial.CurrentStock <= rawMaterial.MinimumAlertLevel)
-                            {
-                                var alertMsg = $"⚠️ DİKKAT: {rawMaterial.Name} stoğu kritik seviyede! (Kalan: {rawMaterial.CurrentStock} {rawMaterial.Unit})";
-                                stockAlerts.Add(alertMsg);
-                                _logger.LogWarning(alertMsg);
-                            }
-                        }
-                    }
-                }
-
-                // 2. Update Order Status
+                // 1. Update Order Status
                 order.Status = OrderStatus.Paid;
                 order.PaymentMethod = paymentMethod;
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                _logger.LogInformation($"Order {order.OrderNumber} paid successfully.");
+                _logger.LogInformation($"Order {order.OrderNumber} status updated to Paid.");
 
-                // 3. Real-time Notifications (SignalR)
-                
-                // Notify payment success (to POS/Kitchen/Admin)
-                await _hubContext.Clients.All.SendAsync("OrderPaid", new 
-                {
-                    OrderId = order.Id,
-                    OrderNumber = order.OrderNumber,
-                    TableName = order.TableName,
-                    Status = "Paid"
-                });
-
-                // Send Stock Alerts if any
-                foreach(var alert in stockAlerts.Distinct())
-                {
-                    await _hubContext.Clients.All.SendAsync("ReceiveStockAlert", alert);
-                }
+                // 2. Publish Event (Fire & Forget or Wait)
+                // We await it to ensure handlers run successfuly before returning, 
+                // but handlers run in their own scopes.
+                await _mediator.Publish(new OrderPaidEvent(order.Id, order.TotalAmount, paymentMethod));
 
                 return NoContent();
             }

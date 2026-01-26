@@ -12,6 +12,7 @@ import { HubConnectionBuilder } from "@microsoft/signalr";
 import { getTables, updateTableStatus } from "@/lib/api";
 import { Armchair, ArrowLeft, Gift, Percent } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import CustomerLoyaltyModal from "@/components/CustomerLoyaltyModal";
 
 import AppHeader from "@/components/layout/AppHeader";
 
@@ -28,7 +29,9 @@ export default function PosPage() {
     checkoutOrder,
     setSelectedTable,
     toggleComplimentary,
-    setDiscountPercentage
+    setDiscountPercentage,
+    selectedCustomer,
+    redeemPoints
   } = usePosStore();
 
   // Modal State
@@ -111,7 +114,16 @@ export default function PosPage() {
   }, 0);
 
   const discountAmount = subTotal * (discountPercentage / 100);
-  const finalTotal = subTotal - discountAmount;
+
+  // Loyalty Points Deduction
+  let pointsDeduction = 0;
+  if (selectedCustomer && redeemPoints && selectedCustomer.points > 0) {
+    // Logic: Deduct points up to the order total, but keeping in mind subTotal - discountAmount
+    const amountAfterGeneralDiscount = subTotal - discountAmount;
+    pointsDeduction = Math.min(selectedCustomer.points, amountAfterGeneralDiscount);
+  }
+
+  const finalTotal = Math.max(0, subTotal - discountAmount - pointsDeduction);
 
   // SignalR Listener for Ready Orders
   useEffect(() => {
@@ -291,7 +303,13 @@ export default function PosPage() {
           {/* Header */}
           <div className="p-6 border-b border-slate-100 bg-slate-50">
             <h2 className="text-2xl font-bold text-slate-800">Adisyon</h2>
+            <h2 className="text-2xl font-bold text-slate-800">Adisyon</h2>
             <p className="text-sm text-slate-500">Masa: <span className="font-bold text-orange-600">{selectedTable.name}</span></p>
+
+            {/* Customer Search Trigger */}
+            <div className="mt-4">
+              <CustomerLoyaltyModal />
+            </div>
           </div>
 
           {/* Cart Items List */}
@@ -386,6 +404,15 @@ export default function PosPage() {
                   <span>-{discountAmount.toFixed(2)} ₺</span>
                 </div>
               )}
+              {pointsDeduction > 0 && (
+                <div className="flex justify-between text-green-600 font-medium">
+                  <div className="flex items-center gap-1">
+                    <Gift className="w-3 h-3" />
+                    <span>Sadakat Puanı</span>
+                  </div>
+                  <span>-{pointsDeduction.toFixed(2)} ₺</span>
+                </div>
+              )}
               <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                 <span className="text-lg font-bold text-slate-800">Genel Toplam</span>
                 <span className="text-3xl font-bold text-slate-900">{finalTotal.toFixed(2)} ₺</span>
@@ -429,6 +456,6 @@ export default function PosPage() {
         />
 
       </div>
-    </div>
+    </div >
   );
 }

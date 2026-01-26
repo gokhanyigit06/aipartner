@@ -15,7 +15,9 @@ import {
     Laptop,
     ChefHat,
     Wine,
-    Users
+    Users,
+    TrendingUp,
+    BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -23,11 +25,13 @@ import { useAuthStore } from "@/store/authStore";
 const menuItems = [
     { icon: LayoutDashboard, label: "Panel", href: "/admin" },
     { icon: UtensilsCrossed, label: "Menü Yönetimi", href: "/admin/products" },
-    { icon: Package, label: "Stok & Depo", href: "/admin/inventory" },
+    { icon: Package, label: "Stok Yönetimi", href: "/admin/inventory" },
+    { icon: ShoppingBag, label: "Satın Alma", href: "/admin/procurement" },
     { icon: Armchair, label: "Masa Yönetimi", href: "/admin/tables" },
-    { icon: ShoppingBag, label: "Siparişler", href: "/admin/orders" },
+    { icon: FileText, label: "Siparişler", href: "/admin/orders" },
     { icon: Users, label: "Personel & Prim", href: "/admin/staff" },
-    { icon: FileText, label: "Finansal Raporlar", href: "/admin/reports" },
+    { icon: TrendingUp, label: "Finans & Dashboard", href: "/admin/finance" },
+    { icon: BarChart3, label: "Analitik & BI", href: "/admin/analytics" },
     { icon: Settings, label: "Ayarlar", href: "/admin/settings" },
 ];
 
