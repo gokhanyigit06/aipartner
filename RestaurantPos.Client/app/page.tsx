@@ -10,12 +10,26 @@ import ProductModal from "@/components/ProductModal";
 import { toast } from "sonner";
 import { HubConnectionBuilder } from "@microsoft/signalr";
 import { getTables, updateTableStatus } from "@/lib/api";
-import { Armchair, ArrowLeft } from "lucide-react";
+import { Armchair, ArrowLeft, Gift, Percent } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 import AppHeader from "@/components/layout/AppHeader";
 
 export default function PosPage() {
-  const { products, cart, selectedTable, fetchProducts, addToCart, removeFromCart, clearCart, checkoutOrder, setSelectedTable } = usePosStore();
+  const {
+    products,
+    cart,
+    selectedTable,
+    discountPercentage,
+    fetchProducts,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    checkoutOrder,
+    setSelectedTable,
+    toggleComplimentary,
+    setDiscountPercentage
+  } = usePosStore();
 
   // Modal State
   const [selectedProduct, setSelectedProduct] = useState<ProductDto | null>(null);
@@ -91,7 +105,13 @@ export default function PosPage() {
     // Usually stay or cleared. Store clears cart.
   };
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.totalPrice, 0);
+  // Calculations
+  const subTotal = cart.reduce((sum, item) => {
+    return sum + (item.isComplimentary ? 0 : item.totalPrice);
+  }, 0);
+
+  const discountAmount = subTotal * (discountPercentage / 100);
+  const finalTotal = subTotal - discountAmount;
 
   // SignalR Listener for Ready Orders
   useEffect(() => {
@@ -284,10 +304,16 @@ export default function PosPage() {
               cart.map((item) => (
                 <div
                   key={item.cartId}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group"
+                  className={`flex items-center justify-between p-3 rounded-lg border group transition-colors ${item.isComplimentary ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100'
+                    }`}
                 >
-                  <div>
-                    <div className="font-semibold text-slate-800">{item.product.name}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold ${item.isComplimentary ? 'text-green-700' : 'text-slate-800'}`}>
+                        {item.product.name}
+                      </span>
+                      {item.isComplimentary && <span className="text-[10px] bg-green-200 text-green-800 px-1 rounded">İKRAM</span>}
+                    </div>
                     {item.selectedModifiers.length > 0 && (
                       <div className="text-xs text-slate-500 mt-1">
                         {item.selectedModifiers.map(m => m.name).join(", ")}
@@ -296,10 +322,22 @@ export default function PosPage() {
                     <div className="text-xs text-slate-400 mt-1">x{item.quantity}</div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-slate-700">
-                      {item.totalPrice} ₺
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold ${item.isComplimentary ? 'text-green-600 line-through decoration-slate-400/50' : 'text-slate-700'}`}>
+                      {item.isComplimentary ? "0 ₺" : `${item.totalPrice} ₺`}
                     </span>
+
+                    {/* Complimentary Toggle */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 transition-colors ${item.isComplimentary ? 'text-green-600 bg-green-100 hover:bg-green-200' : 'text-slate-400 hover:text-green-500 hover:bg-green-50'}`}
+                      onClick={() => toggleComplimentary(item.cartId)}
+                      title="İkram Yap"
+                    >
+                      <Gift className="w-4 h-4" />
+                    </Button>
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -317,9 +355,41 @@ export default function PosPage() {
 
           {/* Footer: Totals & Actions */}
           <div className="p-6 bg-slate-50 border-t border-slate-200">
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-lg text-slate-600">Genel Toplam</span>
-              <span className="text-3xl font-bold text-slate-900">{totalAmount} ₺</span>
+
+            {/* Discount Input */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="relative flex-1">
+                <Percent className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+                <Input
+                  type="number"
+                  placeholder="İndirim %"
+                  className="pl-8 h-9 text-sm"
+                  min="0"
+                  max="100"
+                  value={discountPercentage > 0 ? discountPercentage : ''}
+                  onChange={(e) => setDiscountPercentage(Number(e.target.value))}
+                />
+              </div>
+              <div className="text-xs text-slate-500 w-1/2 leading-tight">
+                Genel indirim oranı
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-6 text-sm">
+              <div className="flex justify-between text-slate-500">
+                <span>Ara Toplam</span>
+                <span>{subTotal.toFixed(2)} ₺</span>
+              </div>
+              {discountPercentage > 0 && (
+                <div className="flex justify-between text-red-500">
+                  <span>İndirim (%{discountPercentage})</span>
+                  <span>-{discountAmount.toFixed(2)} ₺</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                <span className="text-lg font-bold text-slate-800">Genel Toplam</span>
+                <span className="text-3xl font-bold text-slate-900">{finalTotal.toFixed(2)} ₺</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

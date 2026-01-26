@@ -52,7 +52,16 @@ namespace RestaurantPos.Api.Controllers
                                     Name = m.Name,
                                     PriceAdjustment = m.PriceAdjustment
                                 }).ToList()
-                        }).ToList()
+
+                        }).ToList(),
+                    RecipeItems = p.RecipeItems.Select(r => new RecipeItemDto
+                    {
+                        Id = r.Id,
+                        RawMaterialId = r.RawMaterialId,
+                        RawMaterialName = r.RawMaterial.Name,
+                        Amount = r.Amount,
+                        Unit = r.RawMaterial.Unit.ToString()
+                    }).ToList()
                 }).ToListAsync();
 
             return Ok(products);
@@ -115,6 +124,40 @@ namespace RestaurantPos.Api.Controllers
                  Id = newProduct.Id, 
                  Name = newProduct.Name 
              });
+        }
+        [HttpPost("{productId}/recipes")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddRecipeItem(Guid productId, [FromBody] RecipeItemCreateDto dto)
+        {
+            if (dto.Amount <= 0) return BadRequest("Miktar 0'dan büyük olmalıdır.");
+
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return NotFound("Ürün bulunamadı.");
+
+            var rawMaterial = await _context.RawMaterials.FindAsync(dto.RawMaterialId);
+            if (rawMaterial == null) return BadRequest("Seçilen hammadde bulunamadı.");
+
+            var recipeItem = new RecipeItem
+            {
+                Id = Guid.NewGuid(),
+                ProductId = productId,
+                RawMaterialId = dto.RawMaterialId,
+                Amount = dto.Amount,
+                TenantId = product.TenantId
+            };
+
+            _context.RecipeItems.Add(recipeItem);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Sunucu hatası: {ex.Message} {ex.InnerException?.Message}");
+            }
+
+            return Ok();
         }
     }
 }

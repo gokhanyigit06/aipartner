@@ -2,6 +2,61 @@ import { ProductDto, Table, TableStatus } from "@/types/pos";
 import { OrderCreateDto, OrderDto } from "@/types/order";
 import { useAuthStore } from "@/store/authStore";
 
+export interface RawMaterial {
+    id: string;
+    name: string;
+    unit: number;
+    currentStock: number;
+    minimumAlertLevel: number;
+    costPerUnit: number;
+}
+
+export const UnitLabels = ["Gram", "Kilogram", "Adet", "Litre", "Mililitre"];
+
+export async function getRawMaterials(): Promise<RawMaterial[]> {
+    try {
+        const response = await api.get('/rawmaterials');
+        return response.data;
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export async function createRawMaterial(data: any): Promise<boolean> {
+    try {
+        await api.post('/rawmaterials', data);
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+}
+
+export async function addRecipeItem(data: { productId: string, rawMaterialId: string, amount: number }): Promise<boolean> {
+    try {
+        // Only send DTO fields
+        await api.post(`/products/${data.productId}/recipes`, {
+            rawMaterialId: data.rawMaterialId,
+            amount: data.amount
+        });
+        return true;
+    } catch (error) {
+        console.error("addRecipeItem failed:", error);
+        throw error; // Re-throw to be caught by UI
+    }
+}
+
+export async function deleteRecipeItem(id: string): Promise<boolean> {
+    try {
+        await api.delete(`/recipeitems/${id}`);
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+}
+
 const API_BASE_URL = "http://localhost:5001/api";
 
 const getAuthHeaders = () => {
@@ -221,9 +276,11 @@ export const api = {
             headers: getAuthHeaders(),
         });
         if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(errorText || response.statusText);
         }
-        return { data: await response.json() };
+        const text = await response.text();
+        return { data: text ? JSON.parse(text) : null };
     },
     post: async (endpoint: string, data: any) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -232,9 +289,11 @@ export const api = {
             body: JSON.stringify(data),
         });
         if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(errorText || response.statusText);
         }
-        return { data: await response.json() };
+        const text = await response.text();
+        return { data: text ? JSON.parse(text) : null };
     },
     put: async (endpoint: string, data?: any) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -243,9 +302,11 @@ export const api = {
             body: data ? JSON.stringify(data) : undefined,
         });
         if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(errorText || response.statusText);
         }
-        return { data: await response.json() };
+        const text = await response.text();
+        return { data: text ? JSON.parse(text) : null };
     },
     delete: async (endpoint: string) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -253,9 +314,11 @@ export const api = {
             headers: getAuthHeaders(),
         });
         if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(errorText || response.statusText);
         }
-        return { data: await response.json() };
+        const text = await response.text();
+        return { data: text ? JSON.parse(text) : null };
     }
 };
 

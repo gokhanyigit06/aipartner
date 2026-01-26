@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ProductDto, ModifierDto } from '@/types/pos';
 import { getProducts, createOrder } from '@/lib/api';
+import { Table } from '@/types/pos';
 
 export interface CartItem {
     cartId: string;
@@ -8,18 +9,23 @@ export interface CartItem {
     selectedModifiers: ModifierDto[];
     quantity: number;
     totalPrice: number;
+    isComplimentary: boolean;
 }
-
-import { Table } from '@/types/pos';
 
 interface PosState {
     products: ProductDto[];
     cart: CartItem[];
     selectedTable: Table | null;
+    discountPercentage: number;
+
     fetchProducts: () => Promise<void>;
     addToCart: (product: ProductDto, selectedModifiers: ModifierDto[]) => void;
     removeFromCart: (cartId: string) => void;
     clearCart: () => void;
+
+    setDiscountPercentage: (val: number) => void;
+    toggleComplimentary: (cartId: string) => void;
+
     checkoutOrder: () => Promise<void>;
     setSelectedTable: (table: Table | null) => void;
 }
@@ -28,6 +34,8 @@ export const usePosStore = create<PosState>((set, get) => ({
     products: [],
     cart: [],
     selectedTable: null,
+    discountPercentage: 0,
+
     fetchProducts: async () => {
         try {
             const data = await getProducts();
@@ -36,7 +44,9 @@ export const usePosStore = create<PosState>((set, get) => ({
             console.error("Store fetch failed", error);
         }
     },
+
     setSelectedTable: (table) => set({ selectedTable: table }),
+
     addToCart: (product, selectedModifiers) => {
         const modifiersPrice = selectedModifiers.reduce((sum, m) => sum + m.priceAdjustment, 0);
         const itemTotalPrice = product.basePrice + modifiersPrice;
@@ -47,24 +57,37 @@ export const usePosStore = create<PosState>((set, get) => ({
             selectedModifiers,
             quantity: 1,
             totalPrice: itemTotalPrice,
+            isComplimentary: false,
         };
 
         set((state) => ({
             cart: [...state.cart, newItem],
         }));
     },
+
     removeFromCart: (cartId) =>
         set((state) => ({
             cart: state.cart.filter((item) => item.cartId !== cartId),
         })),
-    clearCart: () => set({ cart: [] }),
+
+    clearCart: () => set({ cart: [], discountPercentage: 0 }),
+
+    setDiscountPercentage: (val) => set({ discountPercentage: val }),
+
+    toggleComplimentary: (cartId) => set((state) => ({
+        cart: state.cart.map(item =>
+            item.cartId === cartId
+                ? { ...item, isComplimentary: !item.isComplimentary }
+                : item
+        )
+    })),
+
     checkoutOrder: async () => {
         const state = get();
         if (state.cart.length === 0) return;
 
         if (!state.selectedTable) {
             console.error("No table selected");
-            // Ideally UI should prevent this, but fail safe here.
             return;
         }
 
@@ -77,12 +100,14 @@ export const usePosStore = create<PosState>((set, get) => ({
             tenantId,
             tableId,
             tableName,
+            discountPercentage: state.discountPercentage,
             items: state.cart.map((item: CartItem) => ({
                 productId: item.product.id,
                 productName: item.product.name,
                 quantity: item.quantity,
                 price: item.product.basePrice,
                 notes: "",
+                isComplimentary: item.isComplimentary,
                 modifiers: item.selectedModifiers.map((m: ModifierDto) => ({
                     modifierName: m.name,
                     price: m.priceAdjustment
@@ -92,7 +117,7 @@ export const usePosStore = create<PosState>((set, get) => ({
 
         const success = await createOrder(orderDto);
         if (success) {
-            set({ cart: [] });
+            set({ cart: [], discountPercentage: 0 });
         }
     },
 }));

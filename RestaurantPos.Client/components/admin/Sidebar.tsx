@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     UtensilsCrossed,
     ShoppingBag,
+    Package,
     FileText,
     Settings,
     LogOut,
@@ -22,6 +23,7 @@ import { useAuthStore } from "@/store/authStore";
 const menuItems = [
     { icon: LayoutDashboard, label: "Panel", href: "/admin" },
     { icon: UtensilsCrossed, label: "Menü Yönetimi", href: "/admin/products" },
+    { icon: Package, label: "Stok & Depo", href: "/admin/inventory" },
     { icon: Armchair, label: "Masa Yönetimi", href: "/admin/tables" },
     { icon: ShoppingBag, label: "Siparişler", href: "/admin/orders" },
     { icon: Users, label: "Personel & Prim", href: "/admin/staff" },

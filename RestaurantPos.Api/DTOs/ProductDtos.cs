@@ -17,6 +17,7 @@ namespace RestaurantPos.Api.DTOs
         public string? PrinterIds { get; set; }
         public string? ImageUrl { get; set; }
         public List<ModifierGroupDto> ModifierGroups { get; set; } = new();
+        public List<RecipeItemDto> RecipeItems { get; set; } = new();
     }
 
     public class ModifierGroupDto
@@ -34,6 +35,21 @@ namespace RestaurantPos.Api.DTOs
         public Guid Id { get; set; }
         public string Name { get; set; }
         public decimal PriceAdjustment { get; set; }
+    }
+
+    public class RecipeItemDto
+    {
+        public Guid Id { get; set; }
+        public Guid RawMaterialId { get; set; }
+        public string RawMaterialName { get; set; }
+        public decimal Amount { get; set; }
+        public string Unit { get; set; }
+    }
+
+    public class RecipeItemCreateDto
+    {
+        public Guid RawMaterialId { get; set; }
+        public decimal Amount { get; set; }
     }
 
     // --- CREATE DTOs (For POST) ---

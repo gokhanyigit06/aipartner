@@ -218,6 +218,9 @@ namespace RestaurantPos.Api.Models
 
         // M-N Relationship Navigation
         public ICollection<ProductModifierGroup> ProductModifierGroups { get; set; }
+        
+        // Recipe
+        public ICollection<RecipeItem> RecipeItems { get; set; }
     }
 
     // 2. Modifier Group Model (e.g. "Pizza Crusts", "Extra Toppings")
@@ -314,6 +317,9 @@ namespace RestaurantPos.Api.Models
         public OrderStatus Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal DiscountPercentage { get; set; } = 0; // e.g. 10.00 for 10%
+
         // Navigation
         public ICollection<OrderItem> OrderItems { get; set; }
     }
@@ -336,6 +342,8 @@ namespace RestaurantPos.Api.Models
 
         [MaxLength(500)]
         public string? Notes { get; set; }
+
+        public bool IsComplimentary { get; set; } = false;
 
         // Navigation
         public ICollection<OrderItemModifier> Modifiers { get; set; }
@@ -366,5 +374,45 @@ namespace RestaurantPos.Api.Models
         public double TotalHours => ClockOut.HasValue 
             ? (ClockOut.Value - ClockIn).TotalHours 
             : 0;
+    }
+    // --- Inventory Models ---
+    
+    public enum Unit
+    {
+        Gram = 0,
+        Kilogram = 1,
+        Adet = 2,
+        Litre = 3,
+        Mililitre = 4
+    }
+
+    public class RawMaterial : BaseEntity
+    {
+        [Required]
+        [MaxLength(200)]
+        public string Name { get; set; } // Örn: Kıyma, Kola
+
+        public Unit Unit { get; set; } // Örn: Gram, Adet
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal CurrentStock { get; set; } // Mevcut Stok
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal MinimumAlertLevel { get; set; } // Uyarı Sınırı
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal CostPerUnit { get; set; } // Birim Maliyeti
+    }
+
+    public class RecipeItem : BaseEntity
+    {
+        public Guid ProductId { get; set; }
+        public Product Product { get; set; }
+
+        public Guid RawMaterialId { get; set; }
+        public RawMaterial RawMaterial { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Amount { get; set; } // Reçetedeki miktar
     }
 }

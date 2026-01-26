@@ -25,6 +25,10 @@ namespace RestaurantPos.Api.Data
         public DbSet<StaffProfile> StaffProfiles { get; set; }
         public DbSet<TimeEntry> TimeEntries { get; set; }
 
+        // Inventory
+        public DbSet<RawMaterial> RawMaterials { get; set; }
+        public DbSet<RecipeItem> RecipeItems { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -69,6 +73,19 @@ namespace RestaurantPos.Api.Data
                 .WithOne(te => te.Staff)
                 .HasForeignKey(te => te.StaffId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure RecipeItem Relationships
+            modelBuilder.Entity<RecipeItem>()
+                .HasOne(r => r.Product)
+                .WithMany(p => p.RecipeItems)
+                .HasForeignKey(r => r.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RecipeItem>()
+                .HasOne(r => r.RawMaterial)
+                .WithMany() // RawMaterial has no collection of RecipeItems
+                .HasForeignKey(r => r.RawMaterialId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent deleting RawMaterial if it's used in a recipe
             
             // Seed Users
             // Simple hash for "1234" (using SHA256 for demo purposes)

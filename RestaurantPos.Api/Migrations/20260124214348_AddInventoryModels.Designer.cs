@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RestaurantPos.Api.Data;
@@ -11,9 +12,11 @@ using RestaurantPos.Api.Data;
 namespace RestaurantPos.Api.Migrations
 {
     [DbContext(typeof(PosDbContext))]
-    partial class PosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260124214348_AddInventoryModels")]
+    partial class AddInventoryModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -86,9 +89,6 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("DiscountPercentage")
-                        .HasColumnType("decimal(5,2)");
-
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasColumnType("text");
@@ -131,9 +131,6 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("IsComplimentary")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
@@ -496,7 +493,7 @@ namespace RestaurantPos.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("71b05e0d-504a-4db4-9b1f-ff62e36ac409"),
+                            Id = new Guid("b06fa141-1137-400c-b39e-7efc80f11019"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -506,7 +503,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("f71e14d8-b8cd-43f7-a544-b16b392652c0"),
+                            Id = new Guid("39963cbd-a5ea-4372-b756-e09e7a46f578"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -516,7 +513,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("4ab7c9f9-ec04-402a-8a1c-9a1af7251bbe"),
+                            Id = new Guid("44c662d1-ae97-41c5-9294-b17fa5e65215"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -526,7 +523,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("dfda5b3f-ffe5-44c8-8396-f6af3f9073e0"),
+                            Id = new Guid("7ba0c9de-2e41-4cc2-b4ea-4977babb9d58"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -622,7 +619,7 @@ namespace RestaurantPos.Api.Migrations
                     b.HasOne("RestaurantPos.Api.Models.RawMaterial", "RawMaterial")
                         .WithMany()
                         .HasForeignKey("RawMaterialId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Product");

@@ -35,6 +35,7 @@ export interface ProductDto {
   imageUrl?: string;
   preparationStation: number; // Legacy field
   modifierGroups: ModifierGroupDto[];
+  recipeItems?: RecipeItemDto[];
 }
 
 export interface ModifierGroupDto {
@@ -50,6 +51,14 @@ export interface ModifierDto {
   id: string;
   name: string;
   priceAdjustment: number;
+}
+
+export interface RecipeItemDto {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialName: string;
+  amount: number;
+  unit: string;
 }
 
 export enum TableStatus {

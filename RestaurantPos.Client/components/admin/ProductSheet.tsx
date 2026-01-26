@@ -19,8 +19,9 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ProductDto, ModifierGroupDto, ModifierDto, StationRouting, AllergenType } from "@/types/pos"
-import { createProduct } from "@/lib/api"
+import { Badge } from "@/components/ui/badge"
+import { ProductDto, ModifierGroupDto, ModifierDto, StationRouting, AllergenType, RecipeItemDto } from "@/types/pos"
+import { createProduct, getRawMaterials, RawMaterial, UnitLabels, addRecipeItem, deleteRecipeItem } from "@/lib/api"
 
 interface ProductSheetProps {
     open: boolean
@@ -59,6 +60,12 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
     // Modifier Groups
     const [modifierGroups, setModifierGroups] = useState<ModifierGroupDto[]>([])
 
+    // Recipe Tab
+    const [recipeItems, setRecipeItems] = useState<RecipeItemDto[]>([])
+    const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([])
+    const [selectedMaterialId, setSelectedMaterialId] = useState("")
+    const [recipeAmount, setRecipeAmount] = useState("")
+
     // Load product data when editing
     useEffect(() => {
         if (editProduct && open) {
@@ -71,7 +78,13 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
             setAllergens(editProduct.allergens || 0)
             setStationRouting(editProduct.stationRouting || StationRouting.KitchenOnly)
             setPrinterIds(editProduct.printerIds || "")
+            setStationRouting(editProduct.stationRouting || StationRouting.KitchenOnly)
+            setPrinterIds(editProduct.printerIds || "")
             setModifierGroups(editProduct.modifierGroups || [])
+            setRecipeItems(editProduct.recipeItems || [])
+
+            // Fetch materials if editing
+            fetchMaterials()
         } else if (!editProduct && open) {
             resetForm()
         }
@@ -87,7 +100,75 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
         setAllergens(0)
         setStationRouting(StationRouting.KitchenOnly)
         setPrinterIds("")
+        setPrinterIds("")
         setModifierGroups([])
+        setRecipeItems([])
+        setSelectedMaterialId("")
+        setRecipeAmount("")
+    }
+
+    const fetchMaterials = async () => {
+        const data = await getRawMaterials()
+        setRawMaterials(data)
+    }
+
+    const handleAddRecipeItem = async () => {
+        if (!editProduct || !selectedMaterialId || !recipeAmount) return
+
+        const payload = {
+            productId: editProduct.id,
+            rawMaterialId: selectedMaterialId,
+            amount: parseFloat(recipeAmount)
+        };
+        console.log("Gönderilen Reçete Verisi:", payload);
+
+        try {
+            await addRecipeItem(payload)
+
+            toast.success("Malzeme reçeteye eklendi")
+            setSelectedMaterialId("")
+            setRecipeAmount("")
+            // Trigger refresh
+            onSuccess()
+
+            // Optimistic update
+            const material = rawMaterials.find(m => m.id === selectedMaterialId)
+            if (material) {
+                const newItem: RecipeItemDto = {
+                    id: "temp-" + crypto.randomUUID(),
+                    rawMaterialId: material.id,
+                    rawMaterialName: material.name,
+                    amount: parseFloat(recipeAmount),
+                    unit: UnitLabels[material.unit]
+                }
+                setRecipeItems([...recipeItems, newItem])
+            }
+        } catch (error: any) {
+            console.error(error)
+            toast.error(error.message || "Hata oluştu")
+        }
+    }
+
+    const handleDeleteRecipeItem = async (id: string) => {
+        // If it's a temp item, just remove from state
+        if (id.startsWith("temp-")) {
+            setRecipeItems(recipeItems.filter(i => i.id !== id))
+            return
+        }
+
+        const success = await deleteRecipeItem(id)
+        if (success) {
+            toast.success("Malzeme reçeteden silindi")
+            setRecipeItems(recipeItems.filter(i => i.id !== id))
+            onSuccess()
+        } else {
+            toast.error("Hata oluştu")
+        }
+    }
+
+    const getSelectedMaterialUnit = () => {
+        const m = rawMaterials.find(r => r.id === selectedMaterialId)
+        return m ? UnitLabels[m.unit] : "-"
     }
 
     const handleAllergenToggle = (allergenValue: number) => {
@@ -218,6 +299,7 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
                         <TabsTrigger value="general">📋 Genel Bilgiler</TabsTrigger>
                         <TabsTrigger value="finance">💰 Finans</TabsTrigger>
                         <TabsTrigger value="operations">⚙️ Operasyon</TabsTrigger>
+                        {editProduct && <TabsTrigger value="recipe">🍲 Reçete / Malzemeler</TabsTrigger>}
                     </TabsList>
 
                     {/* TAB 1: Genel Bilgiler */}
@@ -520,6 +602,94 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* TAB 4: Reçete */}
+                    {editProduct && (
+                        <TabsContent value="recipe" className="space-y-4 mt-4">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-lg">Reçete Malzemeleri</CardTitle>
+                                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                            {recipeItems.length} Malzeme
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Bu ürün hazırlanırken stoktan düşülecek malzemeler
+                                    </p>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/* Add New Item */}
+                                    <div className="flex gap-2 items-end p-4 bg-muted/30 rounded-lg border">
+                                        <div className="flex-1 space-y-2">
+                                            <Label>Hammadde Seç</Label>
+                                            <Select value={selectedMaterialId} onValueChange={setSelectedMaterialId}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Malzeme seç..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {rawMaterials.map((m) => (
+                                                        <SelectItem key={m.id} value={m.id}>
+                                                            {m.name} ({UnitLabels[m.unit]})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="w-24 space-y-2">
+                                            <Label>Miktar</Label>
+                                            <Input
+                                                type="number"
+                                                value={recipeAmount}
+                                                onChange={(e) => setRecipeAmount(e.target.value)}
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <div className="w-20 pb-2 text-sm text-muted-foreground font-medium">
+                                            {getSelectedMaterialUnit()}
+                                        </div>
+                                        <Button onClick={handleAddRecipeItem} className="mb-[1px]">
+                                            <Plus className="w-4 h-4 mr-2" /> Ekle
+                                        </Button>
+                                    </div>
+
+                                    {/* List */}
+                                    <div className="space-y-2">
+                                        {recipeItems.map((item) => (
+                                            <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
+                                                        {item.rawMaterialName.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">{item.rawMaterialName}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <Badge variant="secondary" className="text-sm font-normal">
+                                                        {item.amount} {item.unit}
+                                                    </Badge>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-slate-400 hover:text-red-600"
+                                                        onClick={() => handleDeleteRecipeItem(item.id)}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {recipeItems.length === 0 && (
+                                            <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                                                Reçete henüz boş.
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    )}
                 </Tabs>
 
                 <SheetFooter className="mt-6">
@@ -532,6 +702,6 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
                     </Button>
                 </SheetFooter>
             </SheetContent>
-        </Sheet>
+        </Sheet >
     )
 }
