@@ -5,9 +5,9 @@ import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { getTables, createTable, deleteTable } from "@/lib/api";
+import { getTables, createTable, deleteTable, resetTable } from "@/lib/api";
 import { Table, TableStatus } from "@/types/pos";
-import { Trash2, Plus, Armchair, Save } from "lucide-react";
+import { Trash2, Plus, Armchair, Save, RefreshCw, QrCode } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Dialog,
@@ -65,6 +65,18 @@ export default function TablesAdminPage() {
             fetchTables();
         } else {
             toast.error("Silme işlemi başarısız.");
+        }
+    };
+
+    const handleResetTable = async (id: string) => {
+        if (!confirm("Bu masayı zorla boşa düşürmek (sıfırlamak) istediğinize emin misiniz? Eğer açık bir sipariş varsa etkilenmeyebilir, sadece masa durumu güncellenir.")) return;
+
+        const success = await resetTable(id);
+        if (success) {
+            toast.success("Masa durumu sıfırlandı (Boş).");
+            fetchTables();
+        } else {
+            toast.error("Sıfırlama işlemi başarısız.");
         }
     };
 
@@ -151,11 +163,41 @@ export default function TablesAdminPage() {
                                     <div key={table.id} className="relative group bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center hover:border-green-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
 
                                         {/* Delete Button */}
-                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                            {/* QR Menu Test Button */}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-full"
+                                                title="QR Menüyü Aç (Test)"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.open(`/menu/${table.id}`, '_blank');
+                                                }}
+                                            >
+                                                <QrCode className="w-4 h-4" />
+                                            </Button>
+                                            {/* Reset Button (Only if Occupied) */}
+                                            {table.status === TableStatus.Occupied && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded-full"
+                                                    title="Masayı Sıfırla (Boşa Düşür)"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleResetTable(table.id);
+                                                    }}
+                                                >
+                                                    <RefreshCw className="w-4 h-4" />
+                                                </Button>
+                                            )}
+
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full"
+                                                title="Masayı Sil"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteTable(table.id);
@@ -181,8 +223,8 @@ export default function TablesAdminPage() {
                                         </div>
 
                                         <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${table.status === TableStatus.Free ? 'bg-green-50 text-green-600 border-green-100' :
-                                                table.status === TableStatus.Occupied ? 'bg-red-50 text-red-600 border-red-100' :
-                                                    'bg-yellow-50 text-yellow-600 border-yellow-100'
+                                            table.status === TableStatus.Occupied ? 'bg-red-50 text-red-600 border-red-100' :
+                                                'bg-yellow-50 text-yellow-600 border-yellow-100'
                                             }`}>
                                             {table.status === TableStatus.Free ? 'Boş' :
                                                 table.status === TableStatus.Occupied ? 'Dolu' : 'Rezerve'}

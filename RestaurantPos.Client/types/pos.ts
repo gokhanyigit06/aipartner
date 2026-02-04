@@ -24,11 +24,13 @@ export enum AllergenType {
 export interface ProductDto {
   id: string; // Guid
   name: string;
+  description?: string;
   basePrice: number;
   costPrice?: number;
   discountedPrice?: number;
   isActive: boolean;
-  categoryId: string;
+  categoryId?: string | null;
+  categoryName?: string;
   allergens: number; // AllergenType as int (flags)
   stationRouting: number; // StationRouting as int
   printerIds?: string; // JSON string
@@ -72,4 +74,21 @@ export interface Table {
   name: string;
   capacity: number;
   status: TableStatus;
+}
+
+export enum CategoryDisplayMode {
+  Grid = 0,
+  List = 1,
+  ListNoImage = 2,
+  CardCarousel = 3
+}
+
+export interface CategoryDto {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  sortOrder: number;
+  displayMode: CategoryDisplayMode;
+  isActive: boolean;
 }

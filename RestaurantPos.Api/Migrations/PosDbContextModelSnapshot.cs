@@ -22,6 +22,42 @@ namespace RestaurantPos.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("RestaurantPos.Api.Models.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("DisplayMode")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("RestaurantPos.Api.Models.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -257,7 +293,7 @@ namespace RestaurantPos.Api.Migrations
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid>("CategoryId")
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal?>("CostPrice")
@@ -292,6 +328,8 @@ namespace RestaurantPos.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Products");
                 });
@@ -727,7 +765,7 @@ namespace RestaurantPos.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("261f61e1-6311-4a34-a696-08c37a34b18b"),
+                            Id = new Guid("9c803a54-a2c4-4247-95fa-014ed0f80717"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -737,7 +775,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("395d589e-d94a-48fc-87ac-9e54b60d9484"),
+                            Id = new Guid("3ed027c5-9038-4ce4-be7c-713a48a1bca5"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -747,7 +785,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("34cea1da-6fe3-4e8b-b67d-f63f56d17c02"),
+                            Id = new Guid("8d8e9a32-0e15-4398-a50b-5c49d4ec4d81"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -757,7 +795,7 @@ namespace RestaurantPos.Api.Migrations
                         },
                         new
                         {
-                            Id = new Guid("58e720bb-b1c0-4879-ac30-492024270f5d"),
+                            Id = new Guid("d97e40a9-6519-4b7a-9b57-a7310882cb65"),
                             CommissionRate = 0m,
                             MonthlySalary = 0m,
                             PasswordHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
@@ -828,6 +866,15 @@ namespace RestaurantPos.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("OrderItem");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.Product", b =>
+                {
+                    b.HasOne("RestaurantPos.Api.Models.Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("RestaurantPos.Api.Models.ProductModifierGroup", b =>
@@ -946,6 +993,11 @@ namespace RestaurantPos.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("RestaurantPos.Api.Models.Category", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("RestaurantPos.Api.Models.Customer", b =>

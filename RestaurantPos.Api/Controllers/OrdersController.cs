@@ -75,6 +75,19 @@ namespace RestaurantPos.Api.Controllers
         [Authorize(Roles = "Admin, Waiter")]
         public async Task<ActionResult<OrderDto>> CreateOrder(OrderCreateDto input)
         {
+            return await ProcessCreateOrder(input);
+        }
+
+        // POST: api/Orders/public
+        [HttpPost("public")]
+        [AllowAnonymous]
+        public async Task<ActionResult<OrderDto>> CreatePublicOrder(OrderCreateDto input)
+        {
+             return await ProcessCreateOrder(input);
+        }
+
+        private async Task<ActionResult<OrderDto>> ProcessCreateOrder(OrderCreateDto input)
+        {
             // 0. Fetch Products for Verification & Station Info
             var productIds = input.Items.Select(i => i.ProductId).Distinct().ToList();
             var products = await _context.Products
@@ -142,6 +155,17 @@ namespace RestaurantPos.Api.Controllers
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
+             // Update Table Status to Occupied if it has a TableId
+            if (input.TableId.HasValue && input.TableId != Guid.Empty)
+            {
+                var table = await _context.Tables.FindAsync(input.TableId.Value);
+                if (table != null)
+                {
+                    table.Status = TableStatus.Occupied;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             // 5. Response
             var responseDto = new OrderDto
             {
@@ -207,8 +231,9 @@ namespace RestaurantPos.Api.Controllers
             var orders = await _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Modifiers)
-                // Filter for Ready or Served orders (Open for checkout)
-                .Where(o => o.Status == OrderStatus.Ready || o.Status == OrderStatus.Served)
+                // Filter for ALL active orders (New, Preparing, Ready, Served)
+                // This allows cashier to see and checkout orders even if they are not fully ready/served yet.
+                .Where(o => o.Status != OrderStatus.Paid && o.Status != OrderStatus.Cancelled)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
@@ -270,6 +295,17 @@ namespace RestaurantPos.Api.Controllers
                 // 1. Update Order Status
                 order.Status = OrderStatus.Paid;
                 order.PaymentMethod = paymentMethod;
+
+                // 2. Free up the table
+                if (order.TableId != null)
+                {
+                    var table = await _context.Tables.FindAsync(order.TableId);
+                    if (table != null)
+                    {
+                        // table.IsOccupied = false; // Does not exist
+                        table.Status = TableStatus.Free;
+                    }
+                }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

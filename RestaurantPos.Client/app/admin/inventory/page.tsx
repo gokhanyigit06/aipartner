@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { PlusCircle, Package, AlertTriangle, Search } from "lucide-react";
+import { PlusCircle, Package, AlertTriangle, Search, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getRawMaterials, createRawMaterial, RawMaterial, UnitLabels } from "@/lib/api";
+import { getRawMaterials, createRawMaterial, updateRawMaterial, deleteRawMaterial, RawMaterial, UnitLabels } from "@/lib/api";
 
 export default function InventoryPage() {
     const [materials, setMaterials] = useState<RawMaterial[]>([]);
@@ -27,6 +27,7 @@ export default function InventoryPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     // Form States
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [newName, setNewName] = useState("");
     const [newUnit, setNewUnit] = useState("0");
     const [newStock, setNewStock] = useState("");
@@ -44,22 +45,32 @@ export default function InventoryPage() {
         setIsLoading(false);
     };
 
-    const handleCreate = async () => {
+    const handleSave = async () => {
         if (!newName || !newStock || !newMinAlert || !newCost) {
             toast.warning("Lütfen tüm alanları doldurun.");
             return;
         }
 
-        const success = await createRawMaterial({
+        const payload = {
+            id: editingId || undefined,
             name: newName,
             unit: parseInt(newUnit),
             currentStock: parseFloat(newStock),
             minimumAlertLevel: parseFloat(newMinAlert),
             costPerUnit: parseFloat(newCost)
-        });
+        };
+
+        let success = false;
+        if (editingId) {
+            // Update
+            success = await updateRawMaterial(editingId, payload);
+        } else {
+            // Create
+            success = await createRawMaterial(payload);
+        }
 
         if (success) {
-            toast.success("Hammadde eklendi!");
+            toast.success(editingId ? "Hammadde güncellendi!" : "Hammadde eklendi!");
             setIsDialogOpen(false);
             resetForm();
             fetchMaterials();
@@ -68,7 +79,36 @@ export default function InventoryPage() {
         }
     };
 
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`${name} isimli hammaddeyi silmek istediğinize emin misiniz?`)) return;
+
+        const success = await deleteRawMaterial(id);
+        if (success) {
+            toast.success("Hammadde silindi.");
+            fetchMaterials();
+        } else {
+            toast.error("Silme işlemi başarısız.");
+        }
+    };
+
+    const openCreateDialog = () => {
+        resetForm();
+        setEditingId(null);
+        setIsDialogOpen(true);
+    };
+
+    const openEditDialog = (item: RawMaterial) => {
+        setEditingId(item.id);
+        setNewName(item.name);
+        setNewUnit(item.unit.toString());
+        setNewStock(item.currentStock.toString());
+        setNewMinAlert(item.minimumAlertLevel.toString());
+        setNewCost(item.costPerUnit.toString());
+        setIsDialogOpen(true);
+    };
+
     const resetForm = () => {
+        setEditingId(null);
         setNewName("");
         setNewUnit("0");
         setNewStock("");
@@ -94,16 +134,16 @@ export default function InventoryPage() {
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-green-600 hover:bg-green-700 text-white gap-2">
+                        <Button className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={openCreateDialog}>
                             <PlusCircle className="w-4 h-4" />
                             Yeni Hammadde Ekle
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Yeni Hammadde Tanımla</DialogTitle>
+                            <DialogTitle>{editingId ? "Hammadde Düzenle" : "Yeni Hammadde Tanımla"}</DialogTitle>
                             <DialogDescription>
-                                Stok takibi yapılacak yeni bir malzeme ekleyin.
+                                {editingId ? "Mevcut hammadde bilgilerini güncelleyin." : "Stok takibi yapılacak yeni bir malzeme ekleyin."}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -166,7 +206,7 @@ export default function InventoryPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>İptal</Button>
-                            <Button onClick={handleCreate}>Kaydet</Button>
+                            <Button onClick={handleSave}>Kaydet</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -196,17 +236,18 @@ export default function InventoryPage() {
                                 <TableHead>Mevcut Stok</TableHead>
                                 <TableHead>Birim Maliyet</TableHead>
                                 <TableHead>Toplam Değer</TableHead>
-                                <TableHead className="text-right">Durum</TableHead>
+                                <TableHead className="text-center">Durum</TableHead>
+                                <TableHead className="text-right">İşlemler</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8">Yükleniyor...</TableCell>
+                                    <TableCell colSpan={7} className="text-center py-8">Yükleniyor...</TableCell>
                                 </TableRow>
                             ) : filteredMaterials.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                         Kayıt bulunamadı.
                                     </TableCell>
                                 </TableRow>
@@ -229,17 +270,37 @@ export default function InventoryPage() {
                                             </TableCell>
                                             <TableCell>{item.costPerUnit.toFixed(2)} ₺</TableCell>
                                             <TableCell>{(item.currentStock * item.costPerUnit).toFixed(2)} ₺</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-center">
                                                 {isLowStock ? (
                                                     <Badge variant="destructive" className="gap-1">
                                                         <AlertTriangle className="w-3 h-3" />
-                                                        Kritik Seviye
+                                                        Kritik
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                        Stokta Var
+                                                        Stokta
                                                     </Badge>
                                                 )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                        onClick={() => openEditDialog(item)}
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => handleDelete(item.id, item.name)}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );

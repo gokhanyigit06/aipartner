@@ -117,3 +117,11 @@
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/System.Diagnostics.DiagnosticSource.dll
 /Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/MediatR.Extensions.Microsoft.DependencyInjection.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/ClosedXML.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/ClosedXML.Parser.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/DocumentFormat.OpenXml.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/DocumentFormat.OpenXml.Framework.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/ExcelNumberFormat.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/RBush.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/SixLabors.Fonts.dll
+/Users/gokhanyigit/Desktop/aipartner/RestaurantPos.Api/bin/Debug/net8.0/System.IO.Packaging.dll

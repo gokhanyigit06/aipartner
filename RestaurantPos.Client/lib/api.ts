@@ -1,4 +1,4 @@
-import { ProductDto, Table, TableStatus } from "@/types/pos";
+import { ProductDto, Table, TableStatus, CategoryDto } from "@/types/pos";
 import { OrderCreateDto, OrderDto } from "@/types/order";
 import { useAuthStore } from "@/store/authStore";
 
@@ -29,6 +29,74 @@ export async function createRawMaterial(data: any): Promise<boolean> {
         return true;
     } catch (error) {
         console.error(error);
+        return false;
+    }
+}
+
+export async function updateRawMaterial(id: string, data: any): Promise<boolean> {
+    try {
+        await api.put(`/rawmaterials/${id}`, data);
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+}
+
+export async function deleteRawMaterial(id: string): Promise<boolean> {
+    try {
+        await api.delete(`/rawmaterials/${id}`);
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+}
+
+// --- Public Menu APIs ---
+
+export async function getTablePublic(id: string): Promise<any> { // Replace 'any' with Table type if available in client
+    try {
+        const response = await api.get(`/tables/${id}/public`);
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch public table:", error);
+        return null;
+    }
+}
+
+export async function uploadProductsExcel(file: File): Promise<any> {
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await api.post("/products/import", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Upload failed", error);
+        return null;
+    }
+}
+
+export async function getPublicProducts(): Promise<ProductDto[]> {
+    try {
+        const response = await api.get('/products/public');
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch public products:", error);
+        return [];
+    }
+}
+
+export async function createPublicOrder(orderData: any): Promise<boolean> {
+    try {
+        await api.post('/orders/public', orderData);
+        return true;
+    } catch (error) {
+        console.error("Failed to create public order:", error);
         return false;
     }
 }
@@ -122,6 +190,19 @@ export async function updateTableStatus(id: string, status: TableStatus): Promis
     }
 }
 
+export async function resetTable(id: string): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tables/${id}/reset`, {
+            method: "PUT",
+            headers: getAuthHeaders()
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Failed to reset table:", error);
+        return false;
+    }
+}
+
 export async function getProducts(): Promise<ProductDto[]> {
     try {
         const response = await fetch(`${API_BASE_URL}/products`, {
@@ -155,6 +236,25 @@ export async function createProduct(productData: any): Promise<boolean> {
         return true;
     } catch (error) {
         console.error("Failed to create product:", error);
+        return false;
+    }
+}
+
+export async function updateProduct(id: string, productData: any): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(productData),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error updating product: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        return true;
+    } catch (error) {
+        console.error("Failed to update product:", error);
         return false;
     }
 }
@@ -322,3 +422,67 @@ export const api = {
     }
 };
 
+// ============ CATEGORY API ============
+export async function getCategories(): Promise<CategoryDto[]> {
+    try {
+        const response = await api.get<CategoryDto[]>('/categories');
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        return [];
+    }
+}
+
+export async function getPublicCategories(): Promise<CategoryDto[]> {
+    try {
+        const response = await api.get<CategoryDto[]>('/categories/public');
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch public categories:', error);
+        return [];
+    }
+}
+
+export async function createCategory(data: {
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    sortOrder?: number;
+    displayMode?: number;
+    isActive?: boolean;
+}): Promise<boolean> {
+    try {
+        await api.post('/categories', data);
+        return true;
+    } catch (error) {
+        console.error('Failed to create category:', error);
+        return false;
+    }
+}
+
+export async function updateCategory(id: string, data: {
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    sortOrder: number;
+    displayMode: number;
+    isActive: boolean;
+}): Promise<boolean> {
+    try {
+        await api.put(`/categories/${id}`, data);
+        return true;
+    } catch (error) {
+        console.error('Failed to update category:', error);
+        return false;
+    }
+}
+
+export async function deleteCategory(id: string): Promise<boolean> {
+    try {
+        await api.delete(`/categories/${id}`);
+        return true;
+    } catch (error) {
+        console.error('Failed to delete category:', error);
+        return false;
+    }
+}

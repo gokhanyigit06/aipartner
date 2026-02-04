@@ -42,6 +42,21 @@ namespace RestaurantPos.Api.Controllers
             return table;
         }
 
+        // GET: api/Tables/{id}/public
+        [HttpGet("{id}/public")]
+        [AllowAnonymous]
+        public async Task<ActionResult<Table>> GetTablePublic(Guid id)
+        {
+            var table = await _context.Tables.FindAsync(id);
+
+            if (table == null)
+            {
+                return NotFound();
+            }
+
+            return table;
+        }
+
         // POST: api/Tables
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -88,6 +103,24 @@ namespace RestaurantPos.Api.Controllers
             table.Status = status;
             await _context.SaveChangesAsync();
         
+            return NoContent();
+        }
+        // PUT: api/Tables/{id}/reset
+        [HttpPut("{id}/reset")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ResetTable(Guid id)
+        {
+            var table = await _context.Tables.FindAsync(id);
+            if (table == null)
+            {
+                return NotFound();
+            }
+
+            // table.IsOccupied = false; // Property does not exist, Status enum is sufficient
+            table.Status = TableStatus.Free;
+            
+            await _context.SaveChangesAsync();
+
             return NoContent();
         }
     }

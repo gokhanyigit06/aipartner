@@ -40,49 +40,60 @@ export default function CashierPage() {
         }
     };
 
-    useEffect(() => {
-        if (!isAuthenticated || user?.role !== 3 && user?.role !== 0) { // 3 = Cashier, 0 = Admin
-            router.push("/login");
-            return;
-        }
-        loadOrders();
+    const [mounted, setMounted] = useState(false);
 
-        // Optional: SignalR listener for real-time updates (if KitchenHub sends updates)
-        // But for now, simple polling is robust enough given existing code structure.
-        const interval = setInterval(loadOrders, 5000);
-        return () => clearInterval(interval);
+    useEffect(() => {
+        setMounted(true);
     }, []);
 
     useEffect(() => {
+        if (!mounted) return;
+
+        // Role 3 = Cashier, 0 = Admin
+        if (!isAuthenticated || (user?.role !== 3 && user?.role !== 0)) {
+            router.push("/login");
+        } else {
+            loadOrders();
+            // Start polling if desired, or rely on SignalR
+            const interval = setInterval(loadOrders, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [mounted, isAuthenticated, user, router]);
+
+    useEffect(() => {
         // Simple SignalR integration to listen for Ready orders
-        const connection = new signalR.HubConnectionBuilder()
+        const conn = new signalR.HubConnectionBuilder()
             .withUrl("http://localhost:5001/kitchenHub", {
                 accessTokenFactory: () => useAuthStore.getState().user?.token || ""
             })
             .withAutomaticReconnect()
             .build();
 
-        connection.start()
+        // Start connection
+        conn.start()
             .then(() => {
                 console.log("Cashier connected to SignalR");
 
-                connection.on("OrderReady", () => {
+                conn.on("OrderReady", () => {
                     toast.info("Yeni bir sipariş hazır!");
                     loadOrders();
                 });
 
                 // If there is an event for 'OrderPaid', we might want to refresh too if another cashier paid it
-                connection.on("OrderPaid", () => {
+                conn.on("OrderPaid", () => {
                     loadOrders();
                 });
             })
             .catch(err => {
-                console.warn("SignalR bağlantısı kurulamadı (Backend çalışmıyor olabilir):", err.message);
-                // Don't show error to user, just log it
+                if (err.message && err.message.includes("stopped during negotiation")) {
+                    console.log("SignalR connection cancelled during negotiation (Cashier cleanup).");
+                } else {
+                    console.warn("SignalR bağlantısı kurulamadı (Backend çalışmıyor olabilir):", err.message);
+                }
             });
 
         return () => {
-            connection.stop().catch(() => {
+            conn.stop().catch(() => {
                 // Ignore stop errors
             });
         };

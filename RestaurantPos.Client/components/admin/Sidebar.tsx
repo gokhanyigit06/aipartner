@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -17,14 +17,33 @@ import {
     Wine,
     Users,
     TrendingUp,
-    BarChart3
+    BarChart3,
+    Banknote,
+    QrCode,
+    ChevronDown,
+    ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
-const menuItems = [
+interface MenuItem {
+    icon: any;
+    label: string;
+    href?: string;
+    children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: "Panel", href: "/admin" },
-    { icon: UtensilsCrossed, label: "Menü Yönetimi", href: "/admin/products" },
+    {
+        icon: UtensilsCrossed,
+        label: "Menü Yönetimi",
+        children: [
+            { icon: UtensilsCrossed, label: "Ürünler", href: "/admin/products" },
+            { icon: Wine, label: "Kategoriler", href: "/admin/categories" },
+            { icon: QrCode, label: "QR Menü Ayarları", href: "/admin/qrmenu" },
+        ]
+    },
     { icon: Package, label: "Stok Yönetimi", href: "/admin/inventory" },
     { icon: ShoppingBag, label: "Satın Alma", href: "/admin/procurement" },
     { icon: Armchair, label: "Masa Yönetimi", href: "/admin/tables" },
@@ -39,6 +58,7 @@ export default function AdminSidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const { logout } = useAuthStore();
+    const [openMenus, setOpenMenus] = useState<string[]>(["Menü Yönetimi"]); // Default open
 
     const handleLogout = () => {
         // 1. Clear Store
@@ -50,6 +70,91 @@ export default function AdminSidebar() {
 
         // 3. Redirect
         router.push("/login");
+    };
+
+    const toggleMenu = (label: string) => {
+        setOpenMenus(prev =>
+            prev.includes(label)
+                ? prev.filter(item => item !== label)
+                : [...prev, label]
+        );
+    };
+
+    const isMenuOpen = (label: string) => openMenus.includes(label);
+
+    const renderMenuItem = (item: MenuItem) => {
+        if (item.children) {
+            const isOpen = isMenuOpen(item.label);
+            const hasActiveChild = item.children.some(child => pathname === child.href);
+
+            return (
+                <div key={item.label}>
+                    <button
+                        onClick={() => toggleMenu(item.label)}
+                        className={cn(
+                            "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group font-medium",
+                            hasActiveChild
+                                ? "bg-orange-50 text-orange-600"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                        )}
+                    >
+                        <div className="flex items-center gap-3">
+                            <item.icon className={cn("w-5 h-5", hasActiveChild ? "text-orange-600" : "text-slate-400 group-hover:text-slate-600")} />
+                            <span>{item.label}</span>
+                        </div>
+                        {isOpen ? (
+                            <ChevronDown className="w-4 h-4" />
+                        ) : (
+                            <ChevronRight className="w-4 h-4" />
+                        )}
+                    </button>
+
+                    {isOpen && (
+                        <div className="ml-4 mt-1 space-y-1">
+                            {item.children.map(child => {
+                                const isActive = pathname === child.href;
+                                return (
+                                    <Link
+                                        key={child.href}
+                                        href={child.href!}
+                                        className={cn(
+                                            "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative text-sm",
+                                            isActive
+                                                ? "bg-orange-100 text-orange-700"
+                                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                        )}
+                                    >
+                                        <child.icon className={cn("w-4 h-4", isActive ? "text-orange-700" : "text-slate-400 group-hover:text-slate-600")} />
+                                        <span>{child.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const isActive = pathname === item.href;
+        return (
+            <Link
+                key={item.href}
+                href={item.href!}
+                className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative font-medium",
+                    isActive
+                        ? "bg-orange-50 text-orange-600"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                )}
+            >
+                <item.icon className={cn("w-5 h-5 transition-transform duration-200", isActive ? "text-orange-600" : "text-slate-400 group-hover:text-slate-600")} />
+                <span>{item.label}</span>
+
+                {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
+                )}
+            </Link>
+        );
     };
 
     return (
@@ -66,28 +171,7 @@ export default function AdminSidebar() {
 
             {/* Navigation */}
             <nav className="flex-1 py-6 px-3 space-y-1">
-                {menuItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative font-medium",
-                                isActive
-                                    ? "bg-orange-50 text-orange-600"
-                                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                            )}
-                        >
-                            <item.icon className={cn("w-5 h-5 transition-transform duration-200", isActive ? "text-orange-600" : "text-slate-400 group-hover:text-slate-600")} />
-                            <span>{item.label}</span>
-
-                            {isActive && (
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
-                            )}
-                        </Link>
-                    );
-                })}
+                {menuItems.map(renderMenuItem)}
 
                 <div className="my-6 mx-3 border-t border-slate-100" />
 
@@ -121,6 +205,15 @@ export default function AdminSidebar() {
                     >
                         <Wine className="w-5 h-5 text-slate-400 group-hover:text-sky-600" />
                         <span>Bar Ekranı</span>
+                    </Link>
+
+                    <Link
+                        href="/cashier"
+                        target="_blank"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-all font-medium group"
+                    >
+                        <Banknote className="w-5 h-5 text-slate-400 group-hover:text-emerald-600" />
+                        <span>Kasa Ekranı</span>
                     </Link>
                 </div>
             </nav>

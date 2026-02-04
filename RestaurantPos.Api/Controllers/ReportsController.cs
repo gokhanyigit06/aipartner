@@ -61,12 +61,43 @@ namespace RestaurantPos.Api.Controllers
                 .Take(3)
                 .ToListAsync();
 
+            // Saatlik Satışlar (Bugün)
+            var hourlySales = todaysOrders
+                .GroupBy(o => o.CreatedAt.Hour)
+                .Select(g => new HourlySalesDto
+                {
+                    Hour = $"{g.Key:00}:00",
+                    Sales = g.Sum(o => o.TotalAmount)
+                })
+                .OrderBy(x => x.Hour)
+                .ToList();
+
+            // Eksik saatleri 0 ile doldur (Opsiyonel, frontend grafiği için güzel olur)
+            // Basitlik adına mevcut saatleri dönüyoruz.
+
+            // Son Siparişler (Aktif/Genel Akış) - Status fark etmeksizin son 5
+            var recentOrdersList = await _context.Orders
+                .Where(o => o.CreatedAt >= today && o.CreatedAt < tomorrow)
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(5)
+                .Select(o => new RecentOrderDto
+                {
+                    Id = o.OrderNumber,
+                    Table = o.TableName ?? "Paket",
+                    Status = o.Status.ToString(), // Enum string olarak
+                    Total = o.TotalAmount,
+                    CreatedAt = o.CreatedAt
+                })
+                .ToListAsync();
+
             var summary = new DailySummaryDto
             {
                 TotalRevenue = totalRevenue,
                 TotalOrders = totalOrders,
                 ActiveTables = activeTables,
-                BestSellingProducts = bestSellingProducts
+                BestSellingProducts = bestSellingProducts,
+                HourlySales = hourlySales,
+                RecentOrders = recentOrdersList
             };
 
             return Ok(summary);
@@ -101,14 +132,74 @@ namespace RestaurantPos.Api.Controllers
         [HttpGet("profit-loss")]
         public async Task<IActionResult> GetProfitLossReport([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
-            // Zaman aralığı yönetimi
             var start = startDate?.Date ?? DateTime.UtcNow.Date.AddDays(-30);
-            // endDate null ise bugünün sonuna kadar
             var end = endDate?.Date.AddDays(1).AddTicks(-1) ?? DateTime.UtcNow.Date.AddDays(1).AddTicks(-1);
 
             var report = await _reportService.GetProfitLossReportAsync(start, end);
             return Ok(report);
         }
+
+        [HttpGet("detailed-analysis")]
+        public async Task<IActionResult> GetDetailedAnalysis([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        {
+            // 1. Current Period
+            // Defaults to 'Last 30 Days' if not provided
+            var currentStart = startDate?.Date ?? DateTime.UtcNow.Date.AddDays(-30);
+            var currentEnd = endDate?.Date.AddDays(1).AddTicks(-1) ?? DateTime.UtcNow.Date.AddDays(1).AddTicks(-1);
+
+            // 2. Previous Period calculation (Same duration immediately before currentStart)
+            var duration = currentEnd - currentStart;
+            // Ensure strictly distinct periods
+            var previousEnd = currentStart.AddTicks(-1); 
+            var previousStart = previousEnd.Subtract(duration);
+
+            // 3. Fetch Data
+            var currentPeriodData = await _reportService.GetProfitLossReportAsync(currentStart, currentEnd);
+            var previousPeriodData = await _reportService.GetProfitLossReportAsync(previousStart, previousEnd);
+
+            // 4. Calculate Changes
+            var result = new DetailedReportResponse
+            {
+                CurrentPeriod = currentPeriodData,
+                PreviousPeriod = previousPeriodData,
+                Comparison = new ComparisonSummary
+                {
+                    RevenueChangePercentage = CalculateChange(currentPeriodData.TotalRevenue, previousPeriodData.TotalRevenue),
+                    NetProfitChangePercentage = CalculateChange(currentPeriodData.TotalNetProfit, previousPeriodData.TotalNetProfit),
+                    MarginChangePercentage = CalculateChange(currentPeriodData.TotalMarginPercentage, previousPeriodData.TotalMarginPercentage),
+                    CostChangePercentage = CalculateChange(currentPeriodData.TotalInfoCost, previousPeriodData.TotalInfoCost)
+                }
+            };
+
+            return Ok(result);
+        }
+
+        private double CalculateChange(decimal current, decimal previous)
+        {
+            if (previous == 0) return current > 0 ? 100 : 0;
+            return (double)Math.Round(((current - previous) / previous) * 100, 2);
+        }
+
+        private double CalculateChange(double current, double previous)
+        {
+            if (previous == 0) return current > 0 ? 100 : 0;
+            return Math.Round(((current - previous) / previous) * 100, 2);
+        }
+    }
+
+    public class DetailedReportResponse
+    {
+        public ProfitLossReportDto CurrentPeriod { get; set; }
+        public ProfitLossReportDto PreviousPeriod { get; set; }
+        public ComparisonSummary Comparison { get; set; }
+    }
+
+    public class ComparisonSummary
+    {
+        public double RevenueChangePercentage { get; set; }
+        public double NetProfitChangePercentage { get; set; }
+        public double MarginChangePercentage { get; set; }
+        public double CostChangePercentage { get; set; }
     }
 
     // DTOs
@@ -118,6 +209,23 @@ namespace RestaurantPos.Api.Controllers
         public int TotalOrders { get; set; }
         public int ActiveTables { get; set; }
         public List<BestSellingProductDto> BestSellingProducts { get; set; } = new();
+        public List<HourlySalesDto> HourlySales { get; set; } = new();
+        public List<RecentOrderDto> RecentOrders { get; set; } = new();
+    }
+
+    public class HourlySalesDto
+    {
+        public string Hour { get; set; }
+        public decimal Sales { get; set; }
+    }
+
+    public class RecentOrderDto
+    {
+        public string Id { get; set; } // Order Number
+        public string Table { get; set; }
+        public string Status { get; set; }
+        public decimal Total { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class BestSellingProductDto

@@ -15,6 +15,7 @@ namespace RestaurantPos.Api.Data
         }
 
         public DbSet<Product> Products { get; set; }
+        public DbSet<Category> Categories { get; set; }
         public DbSet<ModifierGroup> ModifierGroups { get; set; }
         public DbSet<Modifier> Modifiers { get; set; }
         public DbSet<ProductModifierGroup> ProductModifierGroups { get; set; }

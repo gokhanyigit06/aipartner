@@ -46,8 +46,7 @@ export default function KitchenPage() {
     }, []);
 
     useEffect(() => {
-        // 1. Setup SignalR Connection
-        const newConnection = new HubConnectionBuilder()
+        const connect = new HubConnectionBuilder()
             .withUrl("http://localhost:5001/kitchenHub", {
                 accessTokenFactory: () => useAuthStore.getState().user?.token || ""
             })
@@ -55,14 +54,7 @@ export default function KitchenPage() {
             .configureLogging(LogLevel.Information)
             .build();
 
-        setConnection(newConnection);
-
-        // Return cleanup
-        return () => {
-            newConnection.stop().catch(() => {
-                // Ignore stop errors
-            });
-        };
+        setConnection(connect);
     }, []);
 
     useEffect(() => {
@@ -80,11 +72,16 @@ export default function KitchenPage() {
                     });
                 })
                 .catch((err) => {
-                    console.warn("SignalR bağlantısı kurulamadı (Backend çalışmıyor olabilir):", err.message);
-                    // Don't show error to user, just log it
+                    // Ignore the specific error "The connection was stopped during negotiation" which happens in React Strict Mode
+                    if (err.message && err.message.includes("stopped during negotiation")) {
+                        console.log("SignalR connection cancelled during negotiation (cleanup).");
+                    } else {
+                        console.warn("SignalR not connected:", err.message);
+                    }
                 });
 
             return () => {
+                connection.off("ReceiveNewOrder");
                 connection.stop().catch(() => {
                     // Ignore stop errors
                 });

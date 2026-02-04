@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { PlusCircle, Edit, Trash2, Package } from "lucide-react"
+import { PlusCircle, Edit, Trash2, Package, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ProductDto } from "@/types/pos"
-import { getProducts } from "@/lib/api"
+import { getProducts, uploadProductsExcel } from "@/lib/api"
 import ProductSheet from "@/components/admin/ProductSheet"
 
 export default function ProductsPage() {
@@ -23,10 +23,34 @@ export default function ProductsPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
     const [editProduct, setEditProduct] = useState<ProductDto | null>(null)
+    const [isUploading, setIsUploading] = useState(false)
 
     useEffect(() => {
         fetchProducts()
     }, [])
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        setIsUploading(true);
+        const file = e.target.files[0];
+
+        try {
+            const result = await uploadProductsExcel(file);
+            if (result && result.count >= 0) {
+                toast.success(result.message || "Ürünler başarıyla yüklendi.");
+                fetchProducts();
+            } else {
+                toast.error("Yükleme başarısız oldu.");
+            }
+        } catch (error) {
+            toast.error("Dosya yüklenirken hata oluştu.");
+        } finally {
+            setIsUploading(false);
+            // Verify this reset works if needed, usually we don't need to manually clear generic input unless user retries same file immediately
+            e.target.value = "";
+        }
+    };
 
     const fetchProducts = async () => {
         setIsLoading(true)
@@ -94,13 +118,36 @@ export default function ProductsPage() {
                     </p>
                 </div>
 
-                <Button
-                    onClick={handleNewProduct}
-                    className="bg-green-600 hover:bg-green-700 text-white gap-2"
-                >
-                    <PlusCircle className="w-4 h-4" />
-                    Yeni Ürün Ekle
-                </Button>
+                <div className="flex gap-2">
+                    <label htmlFor="excel-upload">
+                        <Button
+                            variant="outline"
+                            className="cursor-pointer gap-2 border-green-600 text-green-600 hover:bg-green-50"
+                            asChild
+                        >
+                            <span>
+                                <Upload className="w-4 h-4" />
+                                Excel Yükle
+                            </span>
+                        </Button>
+                    </label>
+                    <input
+                        id="excel-upload"
+                        type="file"
+                        accept=".xlsx, .xls"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        disabled={isUploading}
+                    />
+
+                    <Button
+                        onClick={handleNewProduct}
+                        className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                    >
+                        <PlusCircle className="w-4 h-4" />
+                        Yeni Ürün Ekle
+                    </Button>
+                </div>
             </div>
 
             {/* Product List */}

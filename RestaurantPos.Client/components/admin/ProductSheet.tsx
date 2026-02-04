@@ -20,8 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ProductDto, ModifierGroupDto, ModifierDto, StationRouting, AllergenType, RecipeItemDto } from "@/types/pos"
-import { createProduct, getRawMaterials, RawMaterial, UnitLabels, addRecipeItem, deleteRecipeItem } from "@/lib/api"
+import { ProductDto, ModifierGroupDto, ModifierDto, StationRouting, AllergenType, RecipeItemDto, CategoryDto } from "@/types/pos"
+import { createProduct, updateProduct, getRawMaterials, RawMaterial, UnitLabels, addRecipeItem, deleteRecipeItem, getCategories } from "@/lib/api"
 
 interface ProductSheetProps {
     open: boolean
@@ -66,8 +66,16 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
     const [selectedMaterialId, setSelectedMaterialId] = useState("")
     const [recipeAmount, setRecipeAmount] = useState("")
 
+    // Categories
+    const [categories, setCategories] = useState<CategoryDto[]>([])
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>("")
+
     // Load product data when editing
     useEffect(() => {
+        if (open) {
+            fetchCategories()
+        }
+
         if (editProduct && open) {
             setProductName(editProduct.name)
             setImageUrl(editProduct.imageUrl || "")
@@ -82,6 +90,7 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
             setPrinterIds(editProduct.printerIds || "")
             setModifierGroups(editProduct.modifierGroups || [])
             setRecipeItems(editProduct.recipeItems || [])
+            setSelectedCategoryId(editProduct.categoryId || "")
 
             // Fetch materials if editing
             fetchMaterials()
@@ -105,6 +114,12 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
         setRecipeItems([])
         setSelectedMaterialId("")
         setRecipeAmount("")
+        setSelectedCategoryId("")
+    }
+
+    const fetchCategories = async () => {
+        const data = await getCategories()
+        setCategories(data)
     }
 
     const fetchMaterials = async () => {
@@ -244,7 +259,7 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
         }
 
         const payload = {
-            categoryId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            categoryId: selectedCategoryId || null,
             tenantId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
             name: productName,
             basePrice: parseFloat(basePrice),
@@ -259,13 +274,15 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
         }
 
         try {
-            // TODO: Add update API call when editing
-            if (editProduct) {
-                toast.info("Güncelleme özelliği henüz backend'de hazır değil")
-                return
-            }
+            let success;
 
-            const success = await createProduct(payload)
+            if (editProduct) {
+                // Update existing product
+                success = await updateProduct(editProduct.id, payload);
+            } else {
+                // Create new product
+                success = await createProduct(payload);
+            }
 
             if (success) {
                 toast.success(editProduct ? "Ürün başarıyla güncellendi!" : "Ürün başarıyla kaydedildi!")
@@ -317,6 +334,25 @@ export default function ProductSheet({ open, onOpenChange, onSuccess, editProduc
                                         onChange={(e) => setProductName(e.target.value)}
                                         placeholder="Örn: Karışık Pizza"
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="category">Kategori</Label>
+                                    <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                                        <SelectTrigger id="category">
+                                            <SelectValue placeholder="Kategori seçin (opsiyonel)" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map((cat) => (
+                                                <SelectItem key={cat.id} value={cat.id}>
+                                                    {cat.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        QR menüde bu kategoride görünecek
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">

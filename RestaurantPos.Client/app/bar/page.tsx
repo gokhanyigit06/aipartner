@@ -30,9 +30,64 @@ export default function BarPage() {
     const [orders, setOrders] = useState<KdsOrder[]>([]);
     const [connection, setConnection] = useState<HubConnection | null>(null);
 
-    // ... (fetch logic same)
+    // 0. Initial Load of Active Orders
+    useEffect(() => {
+        const fetchActiveOrders = async () => {
+            try {
+                const data = await getActiveOrders();
+                setOrders(data);
+            } catch (error) {
+                console.error("Failed to fetch active orders:", error);
+            }
+        };
 
-    // ... (SignalR logic same)
+        fetchActiveOrders();
+    }, []);
+
+    // 1. Setup SignalR Connection
+    useEffect(() => {
+        const connect = new HubConnectionBuilder()
+            .withUrl("http://localhost:5001/kitchenHub", {
+                accessTokenFactory: () => useAuthStore.getState().user?.token || ""
+            })
+            .withAutomaticReconnect()
+            .configureLogging(LogLevel.Information)
+            .build();
+
+        setConnection(connect);
+    }, []);
+
+    useEffect(() => {
+        if (connection) {
+            connection
+                .start()
+                .then(() => {
+                    console.log("SignalR Connected to KitchenHub (Bar)");
+
+                    // 2. Listen for 'ReceiveNewOrder'
+                    connection.on("ReceiveNewOrder", (newOrder: KdsOrder) => {
+                        console.log("New Order Received:", newOrder);
+                        // Add new order to the top of the list
+                        setOrders((prev) => [newOrder, ...prev]);
+                    });
+                })
+                .catch((err) => {
+                    // Ignore the specific error "The connection was stopped during negotiation"
+                    if (err.message && err.message.includes("stopped during negotiation")) {
+                        console.log("SignalR connection cancelled during negotiation (Bar cleanup).");
+                    } else {
+                        console.warn("SignalR not connected:", err.message);
+                    }
+                });
+
+            return () => {
+                connection.off("ReceiveNewOrder");
+                connection.stop().catch(() => {
+                    // Ignore stop errors
+                });
+            };
+        }
+    }, [connection]);
 
     const handleMarkReady = async (orderId: string) => {
         // ... (Mark ready logic same - assuming api handles generic ready)

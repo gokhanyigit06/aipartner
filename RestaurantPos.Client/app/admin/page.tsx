@@ -43,6 +43,8 @@ interface DailySummary {
     totalOrders: number
     activeTables: number
     bestSellingProducts: BestSellingProduct[]
+    hourlySales: DailyHourlySales[]
+    recentOrders: RecentOrder[]
 }
 
 interface BestSellingProduct {
@@ -51,22 +53,28 @@ interface BestSellingProduct {
     revenue: number
 }
 
-// --- Mock Data ---
+interface DailyHourlySales {
+    hour: string
+    sales: number
+}
 
-const chartData = [
-    { time: "10:00", sales: 1200 },
-    { time: "11:00", sales: 2100 },
-    { time: "12:00", sales: 4500 },
-    { time: "13:00", sales: 3800 },
-    { time: "14:00", sales: 2400 },
-    { time: "15:00", sales: 1800 },
-    { time: "16:00", sales: 3200 },
-    { time: "17:00", sales: 5600 },
-    { time: "18:00", sales: 7200 },
-    { time: "19:00", sales: 8400 },
-    { time: "20:00", sales: 6900 },
-    { time: "21:00", sales: 4100 },
-]
+interface RecentOrder {
+    id: string
+    table: string
+    status: string
+    total: number
+    createdAt: string
+}
+
+// --- Status Map ---
+const STATUS_MAP: Record<string, string> = {
+    "New": "Yeni",
+    "Preparing": "Hazırlanıyor",
+    "Ready": "Hazır",
+    "Served": "Servis Edildi",
+    "Paid": "Tamamlandı",
+    "Cancelled": "İptal"
+};
 
 const chartConfig = {
     sales: {
@@ -74,14 +82,6 @@ const chartConfig = {
         color: "hsl(var(--primary))",
     },
 } satisfies ChartConfig
-
-const recentOrders = [
-    { id: "SIP-1024", table: "Masa 4", total: "450.00 ₺", status: "Hazırlanıyor", time: "2 dk önce" },
-    { id: "SIP-1023", table: "Masa 1", total: "1,250.00 ₺", status: "Tamamlandı", time: "5 dk önce" },
-    { id: "SIP-1022", table: "Paket Servis", total: "320.00 ₺", status: "Yolda", time: "12 dk önce" },
-    { id: "SIP-1021", table: "Masa 8", total: "890.00 ₺", status: "Tamamlandı", time: "15 dk önce" },
-    { id: "SIP-1020", table: "Masa 12", total: "210.00 ₺", status: "İptal", time: "22 dk önce" },
-]
 
 // --- Components ---
 
@@ -112,7 +112,23 @@ export default function AdminDashboardPage() {
         }).format(amount)
     }
 
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
+
+        if (diffInMinutes < 1) return "Şimdi";
+        if (diffInMinutes < 60) return `${diffInMinutes} dk önce`;
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `${diffInHours} sa önce`;
+        return date.toLocaleDateString('tr-TR');
+    }
+
     const topProduct = summary?.bestSellingProducts[0]
+
+    // Default chart data if empty to show grid
+    const chartData = summary?.hourlySales?.length ? summary.hourlySales : [{ hour: "00:00", sales: 0 }];
+    const recentOrders = summary?.recentOrders || [];
 
     return (
         <div className="flex flex-col gap-6 p-2 lg:p-4 animate-in fade-in duration-500">
@@ -177,7 +193,7 @@ export default function AdminDashboardPage() {
                             <BarChart accessibilityLayer data={chartData}>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e5e7eb" />
                                 <XAxis
-                                    dataKey="time"
+                                    dataKey="hour"
                                     tickLine={false}
                                     tickMargin={10}
                                     axisLine={false}
@@ -202,37 +218,45 @@ export default function AdminDashboardPage() {
                         <CardDescription>Sisteme düşen son 5 sipariş.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[100px]">Sipariş No</TableHead>
-                                    <TableHead>Masa</TableHead>
-                                    <TableHead>Durum</TableHead>
-                                    <TableHead className="text-right">Tutar</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentOrders.map((order) => (
-                                    <TableRow key={order.id}>
-                                        <TableCell className="font-medium">{order.id}</TableCell>
-                                        <TableCell>{order.table}</TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant={
-                                                    order.status === "Tamamlandı" ? "default" :
-                                                        order.status === "Hazırlanıyor" ? "secondary" :
-                                                            order.status === "İptal" ? "destructive" : "outline"
-                                                }
-                                                className="text-xs"
-                                            >
-                                                {order.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold">{order.total}</TableCell>
+                        {recentOrders.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400">Henüz sipariş yok.</div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[100px]">Sipariş No</TableHead>
+                                        <TableHead>Masa</TableHead>
+                                        <TableHead>Durum</TableHead>
+                                        <TableHead className="text-right">Tutar</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentOrders.map((order) => (
+                                        <TableRow key={order.id}>
+                                            <TableCell className="font-medium text-xs text-slate-500">
+                                                <div>{order.id}</div>
+                                                <div className="text-[10px] text-slate-400 font-normal">{formatTimeAgo(order.createdAt)}</div>
+                                            </TableCell>
+                                            <TableCell>{order.table}</TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant={
+                                                        order.status === "Paid" ? "default" :
+                                                            order.status === "Completed" ? "default" :
+                                                                order.status === "New" ? "secondary" :
+                                                                    order.status === "Cancelled" ? "destructive" : "outline"
+                                                    }
+                                                    className="text-[10px]"
+                                                >
+                                                    {STATUS_MAP[order.status] || order.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(order.total)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
                     </CardContent>
                 </Card>
 

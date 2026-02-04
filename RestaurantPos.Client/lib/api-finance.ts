@@ -43,3 +43,30 @@ export async function getProfitLossReport(startDate?: string, endDate?: string):
         return null;
     }
 }
+
+export interface DetailedReportResponse {
+    currentPeriod: ProfitLossReportDto;
+    previousPeriod: ProfitLossReportDto;
+    comparison: ComparisonSummary;
+}
+
+export interface ComparisonSummary {
+    revenueChangePercentage: number;
+    netProfitChangePercentage: number;
+    marginChangePercentage: number;
+    costChangePercentage: number;
+}
+
+export async function getDetailedAnalysis(startDate?: string, endDate?: string): Promise<DetailedReportResponse | null> {
+    try {
+        const queryParams = new URLSearchParams();
+        if (startDate) queryParams.append("startDate", startDate);
+        if (endDate) queryParams.append("endDate", endDate);
+
+        const response = await api.get(`/reports/detailed-analysis?${queryParams.toString()}`);
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch detailed analysis:", error);
+        return null;
+    }
+}

@@ -74,6 +74,23 @@ namespace RestaurantPos.Api.Controllers
             return NoContent();
         }
 
+        // DELETE: api/RawMaterials/5
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteRawMaterial(Guid id)
+        {
+            var rawMaterial = await _context.RawMaterials.FindAsync(id);
+            if (rawMaterial == null)
+            {
+                return NotFound();
+            }
+
+            _context.RawMaterials.Remove(rawMaterial);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         private bool RawMaterialExists(Guid id)
         {
             return _context.RawMaterials.Any(e => e.Id == id);

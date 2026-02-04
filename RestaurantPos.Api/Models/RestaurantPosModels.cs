@@ -255,7 +255,8 @@ namespace RestaurantPos.Api.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal? DiscountedPrice { get; set; } // İndirimli/Kampanyalı fiyat
 
-        public Guid CategoryId { get; set; } // Foreign Key to a Category
+        public Guid? CategoryId { get; set; } // Foreign Key to a Category (nullable for migration)
+        public Category? Category { get; set; } // Navigation Property
 
         // Operational Fields
         public bool IsActive { get; set; } = true;
